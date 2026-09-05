@@ -72,6 +72,12 @@ gclient runhooks
 ./build/install-build-deps.sh --no-prompt
 
 export SCRIPT_DIR="$TITANIUM_DIR"
+# patch.sh normally inherits this helper from Titanium's build.sh/common.sh.
+# Define it locally so sourcing common.sh cannot overwrite SCRIPT_DIR with the
+# location of this wrapper script.
+version_lt() {
+  [[ "$1" != "$2" ]] && [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" == "$1" ]]
+}
 source "$TITANIUM_DIR/patch.sh"
 python3 "$KIT_ROOT/kiwi_port/apply.py" "$PWD"
 

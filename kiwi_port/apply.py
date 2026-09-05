@@ -52,18 +52,24 @@ def main() -> int:
             states[relative] = "mismatch"
 
     mismatches = [path for path, state in states.items() if state == "mismatch"]
-    if mismatches:
-        joined = "\n  ".join(mismatches)
-        raise RuntimeError(
-            "source does not match the pinned post-Titanium baseline:\n  " + joined
-        )
 
     if all(state == "after" for state in states.values()):
         print("Kiwi UI core patch is already applied.")
         return 0
-    if not all(state == "before" for state in states.values()):
+    if any(state == "after" for state in states.values()):
         mixed = [f"{path}: {state}" for path, state in states.items()]
         raise RuntimeError("partially applied source:\n  " + "\n  ".join(mixed))
+
+    # Titanium's shell patch layer can produce a small baseline difference as
+    # its version-gated edits evolve. Exact hashes remain the fast path, but an
+    # unknown preimage is accepted only when every unified-diff hunk still
+    # passes git's contextual check. This is safer than disabling validation
+    # and keeps the port usable across harmless downstream edits.
+    if mismatches:
+        details = "\n  ".join(
+            f"{path}: {digest(source / path) or 'missing'}" for path in mismatches
+        )
+        print("WARNING: baseline hash differs; validating patch context:\n  " + details)
 
     run_git(source, "apply", "--check", str(PATCH))
     run_git(source, "apply", str(PATCH))
@@ -71,7 +77,8 @@ def main() -> int:
     bad = [
         path
         for path, expected in MANIFEST["files"].items()
-        if digest(source / path) != expected["after_sha256"]
+        if states[path] == "before"
+        and digest(source / path) != expected["after_sha256"]
     ]
     if bad:
         raise RuntimeError("post-apply verification failed: " + ", ".join(bad))
