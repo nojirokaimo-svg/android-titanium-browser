@@ -91,6 +91,16 @@ s = s.replace(
     'chrome_public_manifest_package = "io.github.jqssun.helium"',
     'chrome_public_manifest_package = "io.github.nojirokaimo.titaniumkiwi"',
 )
+# A full Chromium official release build only reached ~43% before the fixed
+# six-hour GitHub-hosted runner limit. This is an installable validation APK,
+# so trade release optimization and symbols for a substantially faster local
+# debug-code build. Functional/UI behavior remains testable; a distributable
+# optimized release can be produced later on a persistent/larger builder.
+s = s.replace('is_debug = false', 'is_debug = true')
+s = s.replace('is_official_build = true', 'is_official_build = false')
+s = s.replace('symbol_level = 1', 'symbol_level = 0')
+s = s.replace('generate_linker_map = true', 'generate_linker_map = false')
+s += '\nblink_symbol_level = 0\nv8_symbol_level = 0\nuse_thin_lto = false\n'
 p.write_text(s, encoding="utf-8")
 PY
 
