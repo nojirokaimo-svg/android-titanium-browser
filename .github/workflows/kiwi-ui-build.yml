@@ -2,6 +2,9 @@ name: Build Titanium-Kiwi core
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/kiwi-ui-port
 
 permissions:
   contents: read
