@@ -1,0 +1,53 @@
+name: Build Titanium-Kiwi core
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: titanium-kiwi-core-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - name: Checkout fixed port kit
+        uses: actions/checkout@v5
+
+      - name: Free runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo docker system prune --all --force --volumes || true
+          df -h
+
+      - name: Verify patch applicator
+        run: python3 -m py_compile kiwi_port/apply.py
+
+      - name: Build fixed arm64 APK
+        run: ./build_kiwi_ui_arm64.sh
+
+      - name: Upload APK and checksum
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Titanium-Kiwi-core-152-arm64
+          path: output/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Titanium-Kiwi-core-failure
+          path: |
+            work/titanium/chromium/src/out/Default/args.gn
+            work/titanium/chromium/src/out/Default/*.log
+          if-no-files-found: ignore
+          retention-days: 7

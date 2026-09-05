@@ -1,0 +1,445 @@
+diff --git a/chrome/android/chrome_java_resources.gni b/chrome/android/chrome_java_resources.gni
+index 7d53b3f..1899980 100644
+--- a/chrome/android/chrome_java_resources.gni
++++ b/chrome/android/chrome_java_resources.gni
+@@ -8,6 +8,8 @@
+ # git cl format
+ 
+ chrome_java_resources = [
++  "java/res/values/kiwi_ui.xml",
++  "java/res/values-ja/kiwi_ui.xml",
+   "java/res/anim/accelerate_quart.xml",
+   "java/res/anim/activity_close_exit.xml",
+   "java/res/anim/activity_open_enter.xml",
+diff --git a/chrome/android/java/res/values-ja/kiwi_ui.xml b/chrome/android/java/res/values-ja/kiwi_ui.xml
+new file mode 100644
+index 0000000..f86b54e
+--- /dev/null
++++ b/chrome/android/java/res/values-ja/kiwi_ui.xml
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="kiwi_night_mode_on">Nightモードをオン</string>
++    <string name="kiwi_night_mode_off">Nightモードをオフ</string>
++</resources>
+diff --git a/chrome/android/java/res/values/kiwi_ui.xml b/chrome/android/java/res/values/kiwi_ui.xml
+new file mode 100644
+index 0000000..6173e1d
+--- /dev/null
++++ b/chrome/android/java/res/values/kiwi_ui.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <item name="kiwi_extension_action_menu_id" type="id" />
++    <item name="kiwi_night_mode_menu_id" type="id" />
++    <string name="kiwi_night_mode_on">Turn on Night mode</string>
++    <string name="kiwi_night_mode_off">Turn off Night mode</string>
++</resources>
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
+index 0863193..7d877fd 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
+@@ -58,6 +58,7 @@ import org.chromium.base.Callback;
+ import org.chromium.base.CallbackController;
+ import org.chromium.base.CallbackUtils;
+ import org.chromium.base.CommandLine;
++import org.chromium.base.ContextUtils;
+ import org.chromium.base.DeviceInfo;
+ import org.chromium.base.IntentUtils;
+ import org.chromium.base.Log;
+@@ -202,7 +203,10 @@ import org.chromium.chrome.browser.multiwindow.UiUtils.NameWindowDialogSource;
+ import org.chromium.chrome.browser.native_page.NativePageAssassin;
+ import org.chromium.chrome.browser.navigation_predictor.NavigationPredictorBridge;
+ import org.chromium.chrome.browser.new_tab_url.DseNewTabUrlManager;
++import org.chromium.chrome.browser.night_mode.NightModeUtils;
+ import org.chromium.chrome.browser.night_mode.NightModeStateProvider;
++import org.chromium.chrome.browser.night_mode.ThemeType;
++import org.chromium.chrome.browser.night_mode.WebContentsDarkModeController;
+ import org.chromium.chrome.browser.notifications.tips.TipsPromoCoordinator;
+ import org.chromium.chrome.browser.notifications.tips.TipsUtils;
+ import org.chromium.chrome.browser.ntp.NewTabPage;
+@@ -4215,6 +4219,36 @@ public class ChromeTabbedActivity extends ChromeActivity implements PreAttachInt
+             @Nullable Bundle menuItemData,
+             @Nullable MotionEventInfo triggeringMotion) {
+         final Tab currentTab = getActivityTab();
++        if (id == R.id.kiwi_extension_action_menu_id) {
++            if (menuItemData == null) return true;
++            String actionId = menuItemData.getString(
++                    TabbedAppMenuPropertiesDelegate.KIWI_ACTION_ID_KEY);
++            int tabId = menuItemData.getInt(
++                    TabbedAppMenuPropertiesDelegate.KIWI_ACTION_TAB_ID_KEY, -1);
++            var toolbar = getToolbarManager();
++            if (actionId != null && toolbar != null) {
++                var extensions = toolbar.getExtensionsToolbarCoordinator();
++                if (extensions != null) extensions.executeAppMenuAction(actionId, tabId);
++            }
++            return true;
++        }
++        if (id == R.id.kiwi_night_mode_menu_id) {
++            Profile profile = getTabModelSelector().getCurrentModel().getProfile().getOriginalProfile();
++            boolean enable = !WebContentsDarkModeController.isGlobalUserSettingsEnabled(profile);
++            var prefs = ContextUtils.getAppSharedPreferences();
++            if (enable) {
++                prefs.edit().putInt("kiwi.previous_ui_theme", NightModeUtils.getThemeSetting()).apply();
++            }
++            WebContentsDarkModeController.setGlobalUserSettings(profile, enable);
++            ChromeSharedPreferences.getInstance().writeInt(
++                    ChromePreferenceKeys.UI_THEME_SETTING,
++                    enable ? ThemeType.DARK
++                            : prefs.getInt("kiwi.previous_ui_theme", ThemeType.SYSTEM_DEFAULT));
++            if (currentTab != null && currentTab.getWebContents() != null) {
++                currentTab.getWebContents().notifyRendererPreferenceUpdate();
++            }
++            return true;
++        }
+         boolean currentTabIsNtp = isTabNtp(currentTab);
+         if (id == R.id.new_tab_menu_id) {
+             if (!mTabModelSelector.isTabStateInitialized()) {
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
+index 812ccef..1d08a54 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
+@@ -8,7 +8,9 @@ import static org.chromium.build.NullUtil.assumeNonNull;
+ 
+ import android.content.Context;
+ import android.content.res.Resources;
++import android.graphics.drawable.BitmapDrawable;
+ import android.graphics.drawable.Drawable;
++import android.os.Bundle;
+ import android.util.SparseArray;
+ import android.view.View;
+ 
+@@ -51,6 +53,7 @@ import org.chromium.chrome.browser.layouts.LayoutStateProvider;
+ import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.PersistedInstanceType;
+ import org.chromium.chrome.browser.multiwindow.MultiWindowModeStateDispatcher;
+ import org.chromium.chrome.browser.multiwindow.MultiWindowUtils;
++import org.chromium.chrome.browser.night_mode.WebContentsDarkModeController;
+ import org.chromium.chrome.browser.omaha.UpdateMenuItemHelper;
+ import org.chromium.chrome.browser.open_in_app.OpenInAppMenuItemProvider;
+ import org.chromium.chrome.browser.preferences.Pref;
+@@ -63,6 +66,7 @@ import org.chromium.chrome.browser.tab.Tab;
+ import org.chromium.chrome.browser.tabmodel.TabModelSelector;
+ import org.chromium.chrome.browser.task_manager.TaskManager;
+ import org.chromium.chrome.browser.toolbar.ToolbarManager;
++import org.chromium.chrome.browser.toolbar.extensions.ExtensionsToolbarCoordinator;
+ import org.chromium.chrome.browser.toolbar.menu_button.MenuItemState;
+ import org.chromium.chrome.browser.toolbar.top.ToolbarUtils;
+ import org.chromium.chrome.browser.ui.appmenu.AppMenuDelegate;
+@@ -97,7 +101,9 @@ import org.chromium.url.GURL;
+ import java.lang.annotation.Retention;
+ import java.lang.annotation.RetentionPolicy;
+ import java.util.ArrayList;
++import java.util.IdentityHashMap;
+ import java.util.List;
++import java.util.Map;
+ import java.util.function.BiFunction;
+ import java.util.function.BooleanSupplier;
+ import java.util.function.Supplier;
+@@ -287,6 +293,7 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+ 
+     @Override
+     public void destroy() {
++        mKiwiExtensionItems.clear();
+         super.destroy();
+         mBookmarksItemBuilder.destroy();
+         mHistoryItemBuilder.destroy();
+@@ -296,8 +303,57 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+         }
+     }
+ 
++    public static final String KIWI_ACTION_ID_KEY = "kiwi.extension_action_id";
++    public static final String KIWI_ACTION_TAB_ID_KEY = "kiwi.extension_tab_id";
++    private final Map<PropertyModel, ExtensionsToolbarCoordinator.AppMenuAction>
++            mKiwiExtensionItems = new IdentityHashMap<>();
++
++    @Override
++    public @Nullable Bundle getBundleForMenuItem(PropertyModel model) {
++        var action = mKiwiExtensionItems.get(model);
++        if (action != null) {
++            Bundle data = new Bundle();
++            data.putString(KIWI_ACTION_ID_KEY, action.id);
++            data.putInt(KIWI_ACTION_TAB_ID_KEY, action.tabId);
++            return data;
++        }
++        return super.getBundleForMenuItem(model);
++    }
++
++    private void appendKiwiExtensionItems(MVCListAdapter.ModelList modelList) {
++        if (mToolbarManager == null) return;
++        var coordinator = mToolbarManager.getExtensionsToolbarCoordinator();
++        if (coordinator == null) return;
++        for (var action : coordinator.getAppMenuActions()) {
++            PropertyModel model = AppMenuItemUtils.buildBaseModelForTextItem(
++                            getAppMenuItemTheme(), R.id.kiwi_extension_action_menu_id,
++                            isMenuIconAtStart())
++                    .with(AppMenuItemProperties.TITLE, action.name)
++                    .with(AppMenuItemProperties.TITLE_CONDENSED, action.accessibleName)
++                    .with(AppMenuItemProperties.ICON_NO_TINT, action.icon != null)
++                    .build();
++            model.set(AppMenuItemProperties.ICON, action.icon != null
++                    ? new BitmapDrawable(mContext.getResources(), action.icon)
++                    : AppCompatResources.getDrawable(mContext, R.drawable.ic_extension_24dp));
++            mKiwiExtensionItems.put(model, action);
++            modelList.add(AppMenuItemUtils.createStandardListItem(model, true));
++        }
++    }
++
++    private ListItem buildKiwiNightModeItem() {
++        boolean enabled = WebContentsDarkModeController.isGlobalUserSettingsEnabled(
++                getProfileFromTabModel().getOriginalProfile());
++        return AppMenuItemUtils.createStandardListItem(
++                AppMenuItemUtils.buildModelForStandardMenuItem(
++                        mContext, getAppMenuItemTheme(), R.id.kiwi_night_mode_menu_id,
++                        enabled ? R.string.kiwi_night_mode_off : R.string.kiwi_night_mode_on,
++                        R.drawable.ic_brightness_medium_24dp, isMenuIconAtStart()), true);
++    }
++
+     @Override
+     public MVCListAdapter.ModelList buildMenuModelList() {
++        // Do not clear this in onMenuDismissed: the click bundle is read AFTER dismiss.
++        mKiwiExtensionItems.clear();
+         int menuGroup = getMenuGroup();
+         MVCListAdapter.ModelList modelList = new MVCListAdapter.ModelList();
+         if (menuGroup == MenuGroup.PAGE_MENU) {
+@@ -342,6 +398,8 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+                                     R.id.icon_row_menu_id, iconModels, isMenuIconAtStart())));
+         }
+ 
++        appendKiwiExtensionItems(modelList);
++
+         mUpdateMenuItemVisible = shouldShowUpdateMenuItem();
+         Profile profile = getProfileFromTabModel();
+         if (mUpdateMenuItemVisible) {
+@@ -441,7 +499,7 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+ 
+         // Extensions
+         if (shouldShowExtensionsItem()) {
+-            modelList.add(buildExtensionsMenuItem(shouldShowIconBeforeItem));
++            modelList.add(buildKiwiManageExtensionsItem());
+         }
+ 
+         // Divider
+@@ -552,6 +610,9 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+         // Divider Line
+         AppMenuItemUtils.maybeAddDividerLine(modelList, R.id.divider_line_id);
+ 
++        // Kiwi global Night Mode
++        modelList.add(buildKiwiNightModeItem());
++
+         // Settings
+         modelList.add(buildSettingsItem());
+ 
+@@ -1128,6 +1189,20 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+                 /* showIcon= */ false);
+     }
+ 
++    private ListItem buildKiwiManageExtensionsItem() {
++        assert shouldShowExtensionsItem();
++
++        return AppMenuItemUtils.createStandardListItem(
++                AppMenuItemUtils.buildModelForStandardMenuItem(
++                        mContext,
++                        getAppMenuItemTheme(),
++                        R.id.manage_extensions_menu_id,
++                        R.string.menu_extensions_menu,
++                        R.drawable.ic_extension_24dp,
++                        isMenuIconAtStart()),
++                /* showIcon= */ true);
++    }
++
+     private ListItem buildChromeWebstoreItem() {
+         assert shouldShowExtensionsItem();
+         return AppMenuItemUtils.createStandardListItem(
+diff --git a/chrome/browser/chrome_browser_field_trials.cc b/chrome/browser/chrome_browser_field_trials.cc
+index ed7c245..6be9ea1 100644
+--- a/chrome/browser/chrome_browser_field_trials.cc
++++ b/chrome/browser/chrome_browser_field_trials.cc
+@@ -133,7 +133,7 @@ void ChromeBrowserFieldTrials::RegisterFeatureOverrides(
+     feature_overrides.DisableFeature(features::kEyeDropper);
+   }
+ #elif BUILDFLAG(IS_ANDROID)  // BUILDFLAG(IS_LINUX)
+-feature_overrides.EnableFeature(chrome::android::kSubmenusInAppMenu);
++feature_overrides.DisableFeature(chrome::android::kSubmenusInAppMenu);
+ feature_overrides.EnableFeature(features::kAndroidDevToolsFrontend);
+ feature_overrides.EnableFeature(kAndroidMediaPicker);
+ feature_overrides.EnableFeature(features::kUserMediaScreenCapturing);
+@@ -142,7 +142,7 @@ feature_overrides.EnableFeature(media::kAutoPictureInPictureAndroid);
+ feature_overrides.EnableFeature(media::kContextMenuPictureInPictureAndroid);
+ feature_overrides.EnableFeature(chrome::android::kLoadAllTabsAtStartup);
+ feature_overrides.EnableFeature(chrome::android::kChromeNativeUrlOverriding);
+-feature_overrides.EnableFeature(chrome::android::kAndroidBottomBar);
++feature_overrides.DisableFeature(chrome::android::kAndroidBottomBar);
+ #if 0
+   // Nota bene: Anything here is expected to be short-lived, unless deemed too
+   // risky to launch to non-desktop platforms. New features being added here
+diff --git a/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java b/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
+index f21095b..3d2da0a 100644
+--- a/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
++++ b/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
+@@ -780,7 +780,7 @@ public abstract class ChromeFeatureList {
+     public static final CachedFlag sAndroidAutoMintedTwa =
+             newCachedFlag(ANDROID_AUTO_MINTED_TWA, false);
+     public static final CachedFlag sAndroidBottomBar =
+-            newCachedFlag(ANDROID_BOTTOM_BAR, true, /* defaultValueInTests= */ true);
++            newCachedFlag(ANDROID_BOTTOM_BAR, false, /* defaultValueInTests= */ true);
+     public static final CachedFlag sAndroidBottomBarAim =
+             newCachedFlag(ANDROID_BOTTOM_BAR_AIM, false);
+     public static final CachedFlag sAndroidElegantTextHeight =
+diff --git a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
+index 04fd644..ff64ab8 100644
+--- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
++++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
+@@ -394,7 +394,8 @@ class AppMenu implements OnKeyListener {
+ 
+         View contentView = createAppMenuContentView(context, addTopPaddingBeforeFirstRow);
+ 
+-        if (SysUtils.isLowEndDevice()) {
++        // Kiwi uses a compact 8dp menu shape on all devices.
++        {
+             var sharedDrawable = AppCompatResources.getDrawable(context, R.drawable.popup_bg_8dp);
+             if (sharedDrawable != null) {
+                 var drawable = sharedDrawable.mutate();
+diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java
+index 5a04f26..f70ed81 100644
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java
+@@ -5,6 +5,7 @@
+ package org.chromium.chrome.browser.toolbar.extensions;
+ 
+ import android.content.Context;
++import android.graphics.Bitmap;
+ import android.view.KeyEvent;
+ import android.view.ViewGroup;
+ import android.view.ViewStub;
+@@ -29,6 +30,9 @@ import org.chromium.content_public.browser.selection.SelectionDropdownMenuDelega
+ import org.chromium.ui.base.WindowAndroid;
+ import org.chromium.ui.modaldialog.ModalDialogManager;
+ 
++import java.util.Collections;
++import java.util.List;
++
+ /**
+  * The coordinator of the extension-related toolbar UI.
+  *
+@@ -118,6 +122,35 @@ public interface ExtensionsToolbarCoordinator extends ChromeAndroidTaskFeature,
+      */
+     boolean dispatchKeyEvent(KeyEvent event);
+ 
++    /** Snapshot of one action for the Kiwi-style three-dot menu. */
++    final class AppMenuAction {
++        public final String id;
++        public final String name;
++        public final String accessibleName;
++        public final @Nullable Bitmap icon;
++        public final int tabId;
++
++        public AppMenuAction(String id, String name, String accessibleName,
++                @Nullable Bitmap icon, int tabId) {
++            this.id = id;
++            this.name = name;
++            this.accessibleName = accessibleName;
++            this.icon = icon;
++            this.tabId = tabId;
++        }
++    }
++
++    /** Gets actions from the current profile, including native badges and icon state. */
++    default List<AppMenuAction> getAppMenuActions() {
++        return Collections.emptyList();
++    }
++
++    /** Runs an action only if the menu's tab is still current. */
++    default boolean executeAppMenuAction(String actionId, int tabId) {
++        return false;
++    }
++
++
+     /**
+      * Updates the ripple background of the extensions menu button
+      *
+diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
+index 534cbac..af96e94 100644
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
+@@ -36,6 +36,7 @@ import org.chromium.chrome.browser.ui.browser_window.ChromeAndroidTask;
+ import org.chromium.chrome.browser.ui.browser_window.ChromeAndroidTaskFeature.InitInfo;
+ import org.chromium.chrome.browser.ui.extensions.ExtensionActionsBridge;
+ import org.chromium.chrome.browser.ui.extensions.ExtensionsToolbarBridge;
++import org.chromium.chrome.browser.ui.toolbar.InvocationSource;
+ import org.chromium.chrome.browser.user_education.IphCommandBuilder;
+ import org.chromium.chrome.browser.user_education.UserEducationHelper;
+ import org.chromium.components.embedder_support.contextmenu.ContextMenuPopulatorFactory;
+@@ -52,7 +53,11 @@ import org.chromium.ui.modelutil.PropertyModel;
+ import org.chromium.ui.modelutil.PropertyModelChangeProcessor;
+ import org.chromium.ui.widget.AnchoredPopupWindow.HorizontalOrientation;
+ 
++import java.util.ArrayList;
++import java.util.Arrays;
+ import java.util.Collection;
++import java.util.LinkedHashSet;
++import java.util.List;
+ 
+ /** The implementation of {@link extensionsToolbarCoordinator}. */
+ @NullMarked
+@@ -288,6 +293,48 @@ if (!mPrefService.getBoolean(Pref.PIN_EXTENSIONS_MENU_BUTTON)) { mContainer.find
+     @Override
+     public void onLowMemory() {}
+ 
++    @Override
++    public List<AppMenuAction> getAppMenuActions() {
++        List<AppMenuAction> items = new ArrayList<>();
++        if (mIsDestroyed || mProfile.shutdownStarted() || mCurrentTabSupplier == null) {
++            return items;
++        }
++        Tab tab = mCurrentTabSupplier.get();
++        if (tab == null || tab.getWebContents() == null) return items;
++
++        // Respect the user's pinned order, then include every remaining action.
++        // A set also prevents a pinned extension from being listed twice.
++        LinkedHashSet<String> ids = new LinkedHashSet<>(
++                Arrays.asList(mExtensionsToolbarBridge.getPinnedActionIds()));
++        ids.addAll(Arrays.asList(mExtensionsToolbarBridge.getAllActionIds()));
++        for (String id : ids) {
++            var action = mExtensionsToolbarBridge.getAction(id, tab.getWebContents());
++            if (action == null) continue;
++            var icon = ExtensionActionIconUtil.getIcon(mContainer.getContext(),
++                    mWindowAndroid, mExtensionsToolbarBridge, id, tab.getWebContents());
++            items.add(new AppMenuAction(id, action.getName(), action.getAccessibleName(),
++                    icon, tab.getId()));
++        }
++        return items;
++    }
++
++    @Override
++    public boolean executeAppMenuAction(String actionId, int tabId) {
++        if (mIsDestroyed || mProfile.shutdownStarted() || mCurrentTabSupplier == null) {
++            return false;
++        }
++        Tab tab = mCurrentTabSupplier.get();
++        if (tab == null || tab.getId() != tabId || tab.getWebContents() == null) return false;
++        // An extension may have been disabled/uninstalled since the menu opened.
++        if (mExtensionsToolbarBridge.getAction(actionId, tab.getWebContents()) == null) {
++            return false;
++        }
++        // Preserve the native user-gesture, access-control, and popup lifecycle.
++        // Do not load chrome-extension:// URLs directly or make another JNI bridge.
++        mExtensionActionListCoordinator.executeUserAction(actionId, InvocationSource.MENU_ENTRY);
++        return true;
++    }
++
+     @Override
+     public boolean dispatchKeyEvent(KeyEvent event) {
+         // Filter out events we are not interested in before calling into JNI.
+diff --git a/components/browser_ui/styles/android/java/res/values/styles.xml b/components/browser_ui/styles/android/java/res/values/styles.xml
+index 2876f1d..69d0f1a 100644
+--- a/components/browser_ui/styles/android/java/res/values/styles.xml
++++ b/components/browser_ui/styles/android/java/res/values/styles.xml
+@@ -126,7 +126,7 @@ found in the LICENSE file.
+     <!-- Expressive styling for an icon in an overflow menu icon row. -->
+     <style name="OverflowMenuButton" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
+         <item name="materialSizeOverlay">?attr/iconRowButtonSizeOverlay</item>
+-        <item name="backgroundTint">@color/tonal_button_bg_list</item>
++        <item name="backgroundTint">@android:color/transparent</item>
+         <item name="iconTint">@color/tonal_button_icon_tint_list</item>
+         <item name="shapeAppearance">@xml/expressive_button_shape_state_list</item>
+     </style>
