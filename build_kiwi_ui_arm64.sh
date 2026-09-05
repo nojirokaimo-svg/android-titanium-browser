@@ -8,7 +8,14 @@ TITANIUM_COMMIT="80ffcdf1cebe51cddc593f571a6f26c3374aea2e"
 VANADIUM_COMMIT="150a27e23302cc265baf8a7fb7c0f0112bddf2fd"
 CHROMIUM_COMMIT="506c834ecceaa943c5f41e6cfe7f68acb5c45346"
 VERSION="152.0.7977.64"
+PHASE="${KIWI_BUILD_PHASE:-all}"
 
+if [[ "$PHASE" != "all" && "$PHASE" != "prepare" && "$PHASE" != "compile" ]]; then
+  echo "Unknown KIWI_BUILD_PHASE: $PHASE" >&2
+  exit 2
+fi
+
+if [[ "$PHASE" != "compile" ]]; then
 mkdir -p "$BUILD_ROOT"
 if [[ ! -d "$TITANIUM_DIR/.git" ]]; then
   git clone https://github.com/jqssun/android-titanium-browser.git "$TITANIUM_DIR"
@@ -105,10 +112,39 @@ p.write_text(s, encoding="utf-8")
 PY
 
 gn gen out/Default
-autoninja -C out/Default chrome_public_apk
+fi
 
-APK="$(find out/Default/apks -type f -name 'Chrome*.apk' | sort | head -n 1)"
-test -n "$APK"
+if [[ "$PHASE" == "prepare" ]]; then
+  exit 0
+fi
+
+export PATH="$BUILD_ROOT/depot_tools:$PATH"
+cd "$TITANIUM_DIR/chromium/src"
+
+# GitHub-hosted jobs are forcibly terminated at six hours. Stop Siso/Ninja
+# ourselves while enough time remains to save out/Default, then let the next
+# job restore the checkpoint and continue from the completed object files.
+BUILD_STATUS=0
+if [[ -n "${KIWI_BUILD_BUDGET_MINUTES:-}" ]]; then
+  timeout --signal=INT --kill-after=5m \
+    "${KIWI_BUILD_BUDGET_MINUTES}m" \
+    autoninja -C out/Default chrome_public_apk || BUILD_STATUS=$?
+else
+  autoninja -C out/Default chrome_public_apk || BUILD_STATUS=$?
+fi
+
+APK="$(find out/Default/apks -type f -name 'Chrome*.apk' 2>/dev/null | sort | head -n 1 || true)"
+if [[ -z "$APK" ]]; then
+  if [[ "$BUILD_STATUS" -eq 124 || "$BUILD_STATUS" -eq 130 || "$BUILD_STATUS" -eq 137 ]]; then
+    echo "Build budget reached; out/Default is ready for the next checkpoint stage."
+    exit 0
+  fi
+  echo "APK was not produced (autoninja status: $BUILD_STATUS)." >&2
+  if [[ "$BUILD_STATUS" -eq 0 ]]; then
+    exit 1
+  fi
+  exit "$BUILD_STATUS"
+fi
 mkdir -p "$KIT_ROOT/output"
 cp "$APK" "$KIT_ROOT/output/Titanium-Kiwi-core-$VERSION-arm64-v8a.apk"
 
@@ -118,3 +154,4 @@ test -x "$APKSIGNER"
   "$KIT_ROOT/output/Titanium-Kiwi-core-$VERSION-arm64-v8a.apk"
 sha256sum "$KIT_ROOT/output/Titanium-Kiwi-core-$VERSION-arm64-v8a.apk" \
   > "$KIT_ROOT/output/SHA256SUMS.txt"
+touch "$KIT_ROOT/output/BUILD_COMPLETE"

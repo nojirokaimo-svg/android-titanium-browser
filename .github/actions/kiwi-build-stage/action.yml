@@ -1,0 +1,106 @@
+name: Chromium checkpoint build stage
+description: Prepare the pinned tree, resume a cached Ninja output directory, and compile within a safe job budget.
+
+inputs:
+  restore-key:
+    description: Exact cache key produced by the previous stage; empty for stage 1.
+    required: false
+    default: ""
+  save-key:
+    description: Cache key to save when the APK is not finished yet.
+    required: true
+
+outputs:
+  done:
+    description: Whether this stage produced and verified the APK.
+    value: ${{ steps.result.outputs.done }}
+
+runs:
+  using: composite
+  steps:
+    - name: Free runner disk
+      shell: bash
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+        sudo docker system prune --all --force --volumes || true
+        df -h
+
+    - name: Verify patch applicator
+      shell: bash
+      run: python3 -m py_compile kiwi_port/apply.py
+
+    - name: Prepare pinned and patched Chromium tree
+      shell: bash
+      env:
+        KIWI_BUILD_PHASE: prepare
+      run: ./build_kiwi_ui_arm64.sh
+
+    - name: Restore previous compile checkpoint
+      id: restore
+      if: inputs.restore-key != ''
+      uses: actions/cache/restore@v4
+      with:
+        path: work/titanium/chromium/src/out/Default
+        key: ${{ inputs.restore-key }}
+        fail-on-cache-miss: true
+
+    - name: Make restored outputs newer than the identical fresh source tree
+      if: inputs.restore-key != ''
+      shell: bash
+      run: find work/titanium/chromium/src/out/Default -type f -exec touch {} +
+
+    - name: Remove consumed checkpoint from cache quota
+      if: inputs.restore-key != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh cache delete "${{ inputs.restore-key }}" --confirm || true
+
+    - name: Continue arm64 APK compilation for at most 210 minutes
+      id: compile
+      shell: bash
+      env:
+        KIWI_BUILD_PHASE: compile
+        KIWI_BUILD_BUDGET_MINUTES: "210"
+      run: ./build_kiwi_ui_arm64.sh
+
+    - name: Record result and checkpoint size
+      id: result
+      if: always()
+      shell: bash
+      run: |
+        du -sh work/titanium/chromium/src/out/Default || true
+        if [[ -f output/BUILD_COMPLETE ]]; then
+          echo "done=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "done=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Save compile checkpoint
+      if: steps.compile.outcome == 'success' && steps.result.outputs.done != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: work/titanium/chromium/src/out/Default
+        key: ${{ inputs.save-key }}
+
+    - name: Upload APK and checksum
+      if: steps.result.outputs.done == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Titanium-Kiwi-core-152-arm64
+        path: |
+          output/Titanium-Kiwi-core-152.0.7977.64-arm64-v8a.apk
+          output/SHA256SUMS.txt
+        if-no-files-found: error
+        retention-days: 14
+
+    - name: Upload failure diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Titanium-Kiwi-core-failure-${{ inputs.save-key }}
+        path: |
+          work/titanium/chromium/src/out/Default/args.gn
+          work/titanium/chromium/src/out/Default/*.log
+        if-no-files-found: ignore
+        retention-days: 7
