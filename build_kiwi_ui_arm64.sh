@@ -31,6 +31,14 @@ if [[ ! -d "$BUILD_ROOT/depot_tools/.git" ]]; then
 fi
 export PATH="$BUILD_ROOT/depot_tools:$PATH"
 
+# gclient hooks apply patches with plain `git am` inside nested repositories
+# (notably V8). Fresh GitHub runners have no author identity configured, which
+# makes git-am exit before printing an "Applying:" line and crashes Vanadium's
+# patch helper with IndexError. Give all hook-created repositories a disposable
+# build identity before running the hooks.
+git config --global user.name "Titanium-Kiwi build"
+git config --global user.email "build@example.invalid"
+
 mkdir -p "$TITANIUM_DIR/chromium/src/out/Default"
 cd "$TITANIUM_DIR/chromium/src"
 if [[ ! -d .git ]]; then git init; fi
