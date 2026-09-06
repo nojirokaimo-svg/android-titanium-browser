@@ -134,12 +134,24 @@ cd "$TITANIUM_DIR/chromium/src"
 # ourselves while enough time remains to save out/Default, then let the next
 # job restore the checkpoint and continue from the completed object files.
 BUILD_STATUS=0
+BUILD_COMMAND=(autoninja -C out/Default chrome_public_apk)
+if [[ "${KIWI_INCREMENTAL_NINJA:-false}" == "true" ]]; then
+  # Siso's interrupted-build state is not portable across fresh hosted runners:
+  # it re-executed roughly the same 28k edges after every cache restore. Ninja's
+  # timestamp graph reuses the restored object files and only builds missing or
+  # genuinely stale outputs. The composite action makes restored outputs newer
+  # than the identical pinned source tree before selecting this mode.
+  BUILD_COMMAND=(ninja -C out/Default -j "${KIWI_NINJA_JOBS:-4}" chrome_public_apk)
+fi
+printf 'Build command:'
+printf ' %q' "${BUILD_COMMAND[@]}"
+printf '\n'
 if [[ -n "${KIWI_BUILD_BUDGET_MINUTES:-}" ]]; then
   timeout --signal=INT --kill-after=5m \
     "${KIWI_BUILD_BUDGET_MINUTES}m" \
-    autoninja -C out/Default chrome_public_apk || BUILD_STATUS=$?
+    "${BUILD_COMMAND[@]}" || BUILD_STATUS=$?
 else
-  autoninja -C out/Default chrome_public_apk || BUILD_STATUS=$?
+  "${BUILD_COMMAND[@]}" || BUILD_STATUS=$?
 fi
 
 APK="$(find out/Default/apks -type f -name 'Chrome*.apk' 2>/dev/null | sort | head -n 1 || true)"
