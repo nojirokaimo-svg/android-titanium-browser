@@ -29,7 +29,7 @@ test "$(git -C "$TITANIUM_DIR/vanadium" rev-parse HEAD)" = "$VANADIUM_COMMIT"
 
 export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update
-sudo apt-get install -y sudo lsb-release file git curl python3 python3-pillow imagemagick librsvg2-bin
+sudo apt-get install -y sudo lsb-release file git curl python3 python3-pillow imagemagick librsvg2-bin ninja-build
 sudo dpkg --add-architecture i386
 sudo apt-get update
 sudo apt-get install -y libgcc-s1:i386
