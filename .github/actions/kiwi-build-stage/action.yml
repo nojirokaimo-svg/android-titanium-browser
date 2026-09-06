@@ -85,6 +85,7 @@ runs:
       env:
         KIWI_BUILD_PHASE: compile
         KIWI_BUILD_BUDGET_MINUTES: "210"
+        KIWI_INCREMENTAL_NINJA: ${{ inputs.restore-key != '' }}
         CHROMIUM_VERSION: ${{ inputs.chromium-version }}
       run: ./build_kiwi_ui_arm64.sh
 
