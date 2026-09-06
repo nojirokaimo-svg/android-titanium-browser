@@ -141,7 +141,7 @@ if [[ "${KIWI_INCREMENTAL_NINJA:-false}" == "true" ]]; then
   # timestamp graph reuses the restored object files and only builds missing or
   # genuinely stale outputs. The composite action makes restored outputs newer
   # than the identical pinned source tree before selecting this mode.
-  BUILD_COMMAND=(ninja -C out/Default -j "${KIWI_NINJA_JOBS:-4}" chrome_public_apk)
+  BUILD_COMMAND=(/usr/bin/ninja -C out/Default -j "${KIWI_NINJA_JOBS:-4}" chrome_public_apk)
 fi
 printf 'Build command:'
 printf ' %q' "${BUILD_COMMAND[@]}"
