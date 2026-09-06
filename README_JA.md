@@ -34,6 +34,14 @@ Actionsの **Build Titanium-Kiwi core** を実行します。GitHub-hosted runne
 
 成功artifactは `Titanium-Kiwi-core-<version>-arm64` で、APKと `SHA256SUMS.txt` を含みます。テスト版package名は `io.github.nojirokaimo.titaniumkiwi`、Chromiumのテスト署名です。
 
+### Night mode等の増分再ビルド
+
+APKを完成させたStageは、APKとは別に最終 `out/Default` を `kiwi-incremental-<commit>-stage-<N>` という不変cache keyで保存します。途中Stageのcacheも自動削除しません。
+
+Night mode実装後は **Build Titanium-Kiwi core** を手動実行し、`incremental_cache_key`へ完成時に表示されたkeyを指定します。指定したcacheが存在しない場合はコンパイル開始前に失敗させ、暗黙にclean buildへ切り替えません。復元後に同じGN出力ディレクトリへ新しい差分だけを投入し、Ninja/Sisoの依存判定で必要なtargetだけを再生成します。
+
+Chromium/Titanium commit、target CPU、GN args、toolchainなどcache互換性を壊す変更が必要な場合は、clean buildへ進む前に理由と対象を報告します。cache容量整理も自動では行わず、削除前に確認します。
+
 ローカルLinuxでは次を実行します。
 
 ```bash
