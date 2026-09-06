@@ -2,6 +2,11 @@ name: Build Titanium-Kiwi core
 
 on:
   workflow_dispatch:
+    inputs:
+      incremental_cache_key:
+        description: Existing out/Default cache key. When set, a cache miss stops before compilation.
+        required: false
+        default: ""
   push:
     branches:
       - codex/kiwi-ui-port
@@ -25,7 +30,10 @@ jobs:
       - id: build
         uses: ./.github/actions/kiwi-build-stage
         with:
+          restore-key: ${{ inputs.incremental_cache_key }}
+          require-restore: ${{ inputs.incremental_cache_key != '' }}
           save-key: kiwi-${{ github.sha }}-stage-1
+          final-cache-key: kiwi-incremental-${{ github.sha }}-stage-1
 
   stage-2:
     needs: stage-1
@@ -41,6 +49,7 @@ jobs:
         with:
           restore-key: kiwi-${{ github.sha }}-stage-1
           save-key: kiwi-${{ github.sha }}-stage-2
+          final-cache-key: kiwi-incremental-${{ github.sha }}-stage-2
 
   stage-3:
     needs: stage-2
@@ -56,6 +65,7 @@ jobs:
         with:
           restore-key: kiwi-${{ github.sha }}-stage-2
           save-key: kiwi-${{ github.sha }}-stage-3
+          final-cache-key: kiwi-incremental-${{ github.sha }}-stage-3
 
   stage-4:
     needs: stage-3
@@ -71,6 +81,7 @@ jobs:
         with:
           restore-key: kiwi-${{ github.sha }}-stage-3
           save-key: kiwi-${{ github.sha }}-stage-4
+          final-cache-key: kiwi-incremental-${{ github.sha }}-stage-4
 
   stage-5:
     needs: stage-4
@@ -86,6 +97,7 @@ jobs:
         with:
           restore-key: kiwi-${{ github.sha }}-stage-4
           save-key: kiwi-${{ github.sha }}-stage-5
+          final-cache-key: kiwi-incremental-${{ github.sha }}-stage-5
 
   require-apk:
     needs: [stage-1, stage-2, stage-3, stage-4, stage-5]
