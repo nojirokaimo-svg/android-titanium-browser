@@ -9,6 +9,14 @@ inputs:
   save-key:
     description: Cache key to save when the APK is not finished yet.
     required: true
+  final-cache-key:
+    description: Immutable reusable out/Default key saved when this stage produces the APK.
+    required: false
+    default: ""
+  require-restore:
+    description: Refuse to compile if restore-key is unavailable; use for Night mode incremental builds.
+    required: false
+    default: "false"
   titanium-commit:
     required: false
     default: "80ffcdf1cebe51cddc593f571a6f26c3374aea2e"
@@ -64,19 +72,12 @@ runs:
       with:
         path: work/titanium/chromium/src/out/Default
         key: ${{ inputs.restore-key }}
-        fail-on-cache-miss: true
+        fail-on-cache-miss: ${{ inputs.require-restore == 'true' }}
 
     - name: Make restored outputs newer than the identical fresh source tree
       if: inputs.restore-key != ''
       shell: bash
       run: find work/titanium/chromium/src/out/Default -type f -exec touch {} +
-
-    - name: Remove consumed checkpoint from cache quota
-      if: inputs.restore-key != ''
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: gh cache delete "${{ inputs.restore-key }}" --confirm || true
 
     - name: Continue arm64 APK compilation for at most 210 minutes
       id: compile
@@ -105,6 +106,13 @@ runs:
       with:
         path: work/titanium/chromium/src/out/Default
         key: ${{ inputs.save-key }}
+
+    - name: Save completed out/Default for later incremental UI builds
+      if: steps.compile.outcome == 'success' && steps.result.outputs.done == 'true' && inputs.final-cache-key != ''
+      uses: actions/cache/save@v4
+      with:
+        path: work/titanium/chromium/src/out/Default
+        key: ${{ inputs.final-cache-key }}
 
     - name: Upload APK and checksum
       if: steps.result.outputs.done == 'true'
