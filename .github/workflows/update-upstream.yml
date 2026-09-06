@@ -1,0 +1,153 @@
+name: Update Titanium upstream and rebuild Kiwi UI
+
+on:
+  workflow_dispatch:
+    inputs:
+      titanium_ref:
+        description: Titanium branch, tag, or commit; blank uses upstream's default branch HEAD.
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: titanium-kiwi-upstream-update
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      titanium: ${{ steps.source.outputs.titanium_commit }}
+      vanadium: ${{ steps.source.outputs.vanadium_commit }}
+      chromium: ${{ steps.source.outputs.chromium_commit }}
+      version: ${{ steps.source.outputs.chromium_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: source
+        name: Resolve the selected Titanium and Chromium revisions
+        shell: bash
+        env:
+          TITANIUM_REF: ${{ inputs.titanium_ref }}
+        run: |
+          args=(--resolve-only --work-dir "$RUNNER_TEMP/upstream-resolve" --github-output "$GITHUB_OUTPUT")
+          if [[ -n "$TITANIUM_REF" ]]; then args+=(--ref "$TITANIUM_REF"); fi
+          ./update_titanium_upstream.sh "${args[@]}"
+
+  stage-1:
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    outputs:
+      done: ${{ steps.build.outputs.done }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: build
+        uses: ./.github/actions/kiwi-build-stage
+        with:
+          save-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-1
+          titanium-commit: ${{ needs.resolve.outputs.titanium }}
+          vanadium-commit: ${{ needs.resolve.outputs.vanadium }}
+          chromium-commit: ${{ needs.resolve.outputs.chromium }}
+          chromium-version: ${{ needs.resolve.outputs.version }}
+          patch-mode: best-effort
+
+  stage-2:
+    needs: [resolve, stage-1]
+    if: needs.stage-1.outputs.done != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    outputs:
+      done: ${{ steps.build.outputs.done }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: build
+        uses: ./.github/actions/kiwi-build-stage
+        with:
+          restore-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-1
+          save-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-2
+          titanium-commit: ${{ needs.resolve.outputs.titanium }}
+          vanadium-commit: ${{ needs.resolve.outputs.vanadium }}
+          chromium-commit: ${{ needs.resolve.outputs.chromium }}
+          chromium-version: ${{ needs.resolve.outputs.version }}
+          patch-mode: best-effort
+
+  stage-3:
+    needs: [resolve, stage-2]
+    if: needs.stage-2.outputs.done != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    outputs:
+      done: ${{ steps.build.outputs.done }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: build
+        uses: ./.github/actions/kiwi-build-stage
+        with:
+          restore-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-2
+          save-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-3
+          titanium-commit: ${{ needs.resolve.outputs.titanium }}
+          vanadium-commit: ${{ needs.resolve.outputs.vanadium }}
+          chromium-commit: ${{ needs.resolve.outputs.chromium }}
+          chromium-version: ${{ needs.resolve.outputs.version }}
+          patch-mode: best-effort
+
+  stage-4:
+    needs: [resolve, stage-3]
+    if: needs.stage-3.outputs.done != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    outputs:
+      done: ${{ steps.build.outputs.done }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: build
+        uses: ./.github/actions/kiwi-build-stage
+        with:
+          restore-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-3
+          save-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-4
+          titanium-commit: ${{ needs.resolve.outputs.titanium }}
+          vanadium-commit: ${{ needs.resolve.outputs.vanadium }}
+          chromium-commit: ${{ needs.resolve.outputs.chromium }}
+          chromium-version: ${{ needs.resolve.outputs.version }}
+          patch-mode: best-effort
+
+  stage-5:
+    needs: [resolve, stage-4]
+    if: needs.stage-4.outputs.done != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    outputs:
+      done: ${{ steps.build.outputs.done }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: build
+        uses: ./.github/actions/kiwi-build-stage
+        with:
+          restore-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-4
+          save-key: kiwi-upstream-${{ needs.resolve.outputs.titanium }}-stage-5
+          titanium-commit: ${{ needs.resolve.outputs.titanium }}
+          vanadium-commit: ${{ needs.resolve.outputs.vanadium }}
+          chromium-commit: ${{ needs.resolve.outputs.chromium }}
+          chromium-version: ${{ needs.resolve.outputs.version }}
+          patch-mode: best-effort
+
+  require-apk:
+    needs: [resolve, stage-1, stage-2, stage-3, stage-4, stage-5]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require conflict-free patches and a completed APK
+        env:
+          S1: ${{ needs.stage-1.outputs.done }}
+          S2: ${{ needs.stage-2.outputs.done }}
+          S3: ${{ needs.stage-3.outputs.done }}
+          S4: ${{ needs.stage-4.outputs.done }}
+          S5: ${{ needs.stage-5.outputs.done }}
+        run: |
+          if [[ "$S1" != true && "$S2" != true && "$S3" != true && "$S4" != true && "$S5" != true ]]; then
+            echo "Upstream update did not produce an APK. Check the failed stage's patch report or build logs." >&2
+            exit 1
+          fi

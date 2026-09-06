@@ -4,11 +4,13 @@ set -Eeuo pipefail
 KIT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD_ROOT="${KIWI_BUILD_ROOT:-$KIT_ROOT/work}"
 TITANIUM_DIR="$BUILD_ROOT/titanium"
-TITANIUM_COMMIT="80ffcdf1cebe51cddc593f571a6f26c3374aea2e"
-VANADIUM_COMMIT="150a27e23302cc265baf8a7fb7c0f0112bddf2fd"
-CHROMIUM_COMMIT="506c834ecceaa943c5f41e6cfe7f68acb5c45346"
-VERSION="152.0.7977.64"
+TITANIUM_REPOSITORY="${TITANIUM_REPOSITORY:-https://github.com/jqssun/android-titanium-browser.git}"
+TITANIUM_COMMIT="${TITANIUM_COMMIT:-80ffcdf1cebe51cddc593f571a6f26c3374aea2e}"
+VANADIUM_COMMIT="${VANADIUM_COMMIT:-150a27e23302cc265baf8a7fb7c0f0112bddf2fd}"
+CHROMIUM_COMMIT="${CHROMIUM_COMMIT:-506c834ecceaa943c5f41e6cfe7f68acb5c45346}"
+VERSION="${CHROMIUM_VERSION:-152.0.7977.64}"
 PHASE="${KIWI_BUILD_PHASE:-all}"
+PATCH_MODE="${KIWI_PATCH_MODE:-strict}"
 
 if [[ "$PHASE" != "all" && "$PHASE" != "prepare" && "$PHASE" != "compile" ]]; then
   echo "Unknown KIWI_BUILD_PHASE: $PHASE" >&2
@@ -18,7 +20,7 @@ fi
 if [[ "$PHASE" != "compile" ]]; then
 mkdir -p "$BUILD_ROOT"
 if [[ ! -d "$TITANIUM_DIR/.git" ]]; then
-  git clone https://github.com/jqssun/android-titanium-browser.git "$TITANIUM_DIR"
+  git clone "$TITANIUM_REPOSITORY" "$TITANIUM_DIR"
 fi
 git -C "$TITANIUM_DIR" fetch --depth 1 origin "$TITANIUM_COMMIT"
 git -C "$TITANIUM_DIR" checkout --detach "$TITANIUM_COMMIT"
@@ -86,7 +88,14 @@ version_lt() {
   [[ "$1" != "$2" ]] && [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" == "$1" ]]
 }
 source "$TITANIUM_DIR/patch.sh"
-python3 "$KIT_ROOT/kiwi_port/apply.py" "$PWD"
+PATCH_ARGS=()
+if [[ "$PATCH_MODE" == "best-effort" ]]; then
+  PATCH_ARGS+=(--best-effort --report "${KIWI_PATCH_REPORT:-$KIT_ROOT/output/kiwi-patch-report.md}")
+elif [[ "$PATCH_MODE" != "strict" ]]; then
+  echo "Unknown KIWI_PATCH_MODE: $PATCH_MODE" >&2
+  exit 2
+fi
+python3 "$KIT_ROOT/kiwi_port/apply.py" "$PWD" "${PATCH_ARGS[@]}"
 
 cp "$TITANIUM_DIR/args.gn" out/Default/args.gn
 python3 - <<'PY'

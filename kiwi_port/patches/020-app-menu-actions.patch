@@ -1,42 +1,5 @@
-diff --git a/chrome/android/chrome_java_resources.gni b/chrome/android/chrome_java_resources.gni
-index 7d53b3f..1899980 100644
---- a/chrome/android/chrome_java_resources.gni
-+++ b/chrome/android/chrome_java_resources.gni
-@@ -8,6 +8,8 @@
- # git cl format
- 
- chrome_java_resources = [
-+  "java/res/values/kiwi_ui.xml",
-+  "java/res/values-ja/kiwi_ui.xml",
-   "java/res/anim/accelerate_quart.xml",
-   "java/res/anim/activity_close_exit.xml",
-   "java/res/anim/activity_open_enter.xml",
-diff --git a/chrome/android/java/res/values-ja/kiwi_ui.xml b/chrome/android/java/res/values-ja/kiwi_ui.xml
-new file mode 100644
-index 0000000..f86b54e
---- /dev/null
-+++ b/chrome/android/java/res/values-ja/kiwi_ui.xml
-@@ -0,0 +1,5 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<resources>
-+    <string name="kiwi_night_mode_on">Nightモードをオン</string>
-+    <string name="kiwi_night_mode_off">Nightモードをオフ</string>
-+</resources>
-diff --git a/chrome/android/java/res/values/kiwi_ui.xml b/chrome/android/java/res/values/kiwi_ui.xml
-new file mode 100644
-index 0000000..6173e1d
---- /dev/null
-+++ b/chrome/android/java/res/values/kiwi_ui.xml
-@@ -0,0 +1,7 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<resources>
-+    <item name="kiwi_extension_action_menu_id" type="id" />
-+    <item name="kiwi_night_mode_menu_id" type="id" />
-+    <string name="kiwi_night_mode_on">Turn on Night mode</string>
-+    <string name="kiwi_night_mode_off">Turn off Night mode</string>
-+</resources>
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
-index 0863193..7d877fd 100644
+index 0863193e6e2569edcbc798972ba545b1d647a635..7d877fd2057eecb05507a4049b04157b4a51fd7a 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
 @@ -58,6 +58,7 @@ import org.chromium.base.Callback;
@@ -96,7 +59,7 @@ index 0863193..7d877fd 100644
          if (id == R.id.new_tab_menu_id) {
              if (!mTabModelSelector.isTabStateInitialized()) {
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
-index 812ccef..1d08a54 100644
+index 812ccef53222d6d6616186805411481bb7cdd063..1d08a545dc8a3dd5af64fe1c55a23b00e44b8e6c 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
 @@ -8,7 +8,9 @@ import static org.chromium.build.NullUtil.assumeNonNull;
@@ -250,57 +213,8 @@ index 812ccef..1d08a54 100644
      private ListItem buildChromeWebstoreItem() {
          assert shouldShowExtensionsItem();
          return AppMenuItemUtils.createStandardListItem(
-diff --git a/chrome/browser/chrome_browser_field_trials.cc b/chrome/browser/chrome_browser_field_trials.cc
-index ed7c245..6be9ea1 100644
---- a/chrome/browser/chrome_browser_field_trials.cc
-+++ b/chrome/browser/chrome_browser_field_trials.cc
-@@ -133,7 +133,7 @@ void ChromeBrowserFieldTrials::RegisterFeatureOverrides(
-     feature_overrides.DisableFeature(features::kEyeDropper);
-   }
- #elif BUILDFLAG(IS_ANDROID)  // BUILDFLAG(IS_LINUX)
--feature_overrides.EnableFeature(chrome::android::kSubmenusInAppMenu);
-+feature_overrides.DisableFeature(chrome::android::kSubmenusInAppMenu);
- feature_overrides.EnableFeature(features::kAndroidDevToolsFrontend);
- feature_overrides.EnableFeature(kAndroidMediaPicker);
- feature_overrides.EnableFeature(features::kUserMediaScreenCapturing);
-@@ -142,7 +142,7 @@ feature_overrides.EnableFeature(media::kAutoPictureInPictureAndroid);
- feature_overrides.EnableFeature(media::kContextMenuPictureInPictureAndroid);
- feature_overrides.EnableFeature(chrome::android::kLoadAllTabsAtStartup);
- feature_overrides.EnableFeature(chrome::android::kChromeNativeUrlOverriding);
--feature_overrides.EnableFeature(chrome::android::kAndroidBottomBar);
-+feature_overrides.DisableFeature(chrome::android::kAndroidBottomBar);
- #if 0
-   // Nota bene: Anything here is expected to be short-lived, unless deemed too
-   // risky to launch to non-desktop platforms. New features being added here
-diff --git a/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java b/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
-index f21095b..3d2da0a 100644
---- a/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
-+++ b/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
-@@ -780,7 +780,7 @@ public abstract class ChromeFeatureList {
-     public static final CachedFlag sAndroidAutoMintedTwa =
-             newCachedFlag(ANDROID_AUTO_MINTED_TWA, false);
-     public static final CachedFlag sAndroidBottomBar =
--            newCachedFlag(ANDROID_BOTTOM_BAR, true, /* defaultValueInTests= */ true);
-+            newCachedFlag(ANDROID_BOTTOM_BAR, false, /* defaultValueInTests= */ true);
-     public static final CachedFlag sAndroidBottomBarAim =
-             newCachedFlag(ANDROID_BOTTOM_BAR_AIM, false);
-     public static final CachedFlag sAndroidElegantTextHeight =
-diff --git a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
-index 04fd644..ff64ab8 100644
---- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
-+++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
-@@ -394,7 +394,8 @@ class AppMenu implements OnKeyListener {
- 
-         View contentView = createAppMenuContentView(context, addTopPaddingBeforeFirstRow);
- 
--        if (SysUtils.isLowEndDevice()) {
-+        // Kiwi uses a compact 8dp menu shape on all devices.
-+        {
-             var sharedDrawable = AppCompatResources.getDrawable(context, R.drawable.popup_bg_8dp);
-             if (sharedDrawable != null) {
-                 var drawable = sharedDrawable.mutate();
 diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java
-index 5a04f26..f70ed81 100644
+index 5a04f265511c034551387567fb6cea21107387d8..f70ed81ba4367b81fd4d269c2e04b8c6943d1278 100644
 --- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java
 +++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java
 @@ -5,6 +5,7 @@
@@ -358,7 +272,7 @@ index 5a04f26..f70ed81 100644
       * Updates the ripple background of the extensions menu button
       *
 diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
-index 534cbac..af96e94 100644
+index 534cbaca081574c13ab53292f9fbd6ccfeec729b..af96e94edc93d2229d13c41e06a4cf270d60ae7b 100644
 --- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
 +++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
 @@ -36,6 +36,7 @@ import org.chromium.chrome.browser.ui.browser_window.ChromeAndroidTask;
@@ -430,16 +344,3 @@ index 534cbac..af96e94 100644
      @Override
      public boolean dispatchKeyEvent(KeyEvent event) {
          // Filter out events we are not interested in before calling into JNI.
-diff --git a/components/browser_ui/styles/android/java/res/values/styles.xml b/components/browser_ui/styles/android/java/res/values/styles.xml
-index 2876f1d..69d0f1a 100644
---- a/components/browser_ui/styles/android/java/res/values/styles.xml
-+++ b/components/browser_ui/styles/android/java/res/values/styles.xml
-@@ -126,7 +126,7 @@ found in the LICENSE file.
-     <!-- Expressive styling for an icon in an overflow menu icon row. -->
-     <style name="OverflowMenuButton" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
-         <item name="materialSizeOverlay">?attr/iconRowButtonSizeOverlay</item>
--        <item name="backgroundTint">@color/tonal_button_bg_list</item>
-+        <item name="backgroundTint">@android:color/transparent</item>
-         <item name="iconTint">@color/tonal_button_icon_tint_list</item>
-         <item name="shapeAppearance">@xml/expressive_button_shape_state_list</item>
-     </style>

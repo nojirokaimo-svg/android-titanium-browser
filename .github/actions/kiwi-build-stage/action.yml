@@ -9,6 +9,22 @@ inputs:
   save-key:
     description: Cache key to save when the APK is not finished yet.
     required: true
+  titanium-commit:
+    required: false
+    default: "80ffcdf1cebe51cddc593f571a6f26c3374aea2e"
+  vanadium-commit:
+    required: false
+    default: "150a27e23302cc265baf8a7fb7c0f0112bddf2fd"
+  chromium-commit:
+    required: false
+    default: "506c834ecceaa943c5f41e6cfe7f68acb5c45346"
+  chromium-version:
+    required: false
+    default: "152.0.7977.64"
+  patch-mode:
+    description: strict for pinned builds; best-effort for a newly resolved upstream.
+    required: false
+    default: strict
 
 outputs:
   done:
@@ -33,6 +49,12 @@ runs:
       shell: bash
       env:
         KIWI_BUILD_PHASE: prepare
+        KIWI_PATCH_MODE: ${{ inputs.patch-mode }}
+        KIWI_PATCH_REPORT: ${{ github.workspace }}/output/kiwi-patch-report.md
+        TITANIUM_COMMIT: ${{ inputs.titanium-commit }}
+        VANADIUM_COMMIT: ${{ inputs.vanadium-commit }}
+        CHROMIUM_COMMIT: ${{ inputs.chromium-commit }}
+        CHROMIUM_VERSION: ${{ inputs.chromium-version }}
       run: ./build_kiwi_ui_arm64.sh
 
     - name: Restore previous compile checkpoint
@@ -62,6 +84,7 @@ runs:
       env:
         KIWI_BUILD_PHASE: compile
         KIWI_BUILD_BUDGET_MINUTES: "210"
+        CHROMIUM_VERSION: ${{ inputs.chromium-version }}
       run: ./build_kiwi_ui_arm64.sh
 
     - name: Record result and checkpoint size
@@ -87,9 +110,9 @@ runs:
       if: steps.result.outputs.done == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: Titanium-Kiwi-core-152-arm64
+        name: Titanium-Kiwi-core-${{ inputs.chromium-version }}-arm64
         path: |
-          output/Titanium-Kiwi-core-152.0.7977.64-arm64-v8a.apk
+          output/Titanium-Kiwi-core-*-arm64-v8a.apk
           output/SHA256SUMS.txt
         if-no-files-found: error
         retention-days: 14
@@ -102,5 +125,7 @@ runs:
         path: |
           work/titanium/chromium/src/out/Default/args.gn
           work/titanium/chromium/src/out/Default/*.log
+          output/kiwi-patch-report.*
+          work/titanium/chromium/src/**/*.rej
         if-no-files-found: ignore
         retention-days: 7

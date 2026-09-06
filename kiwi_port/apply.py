@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the pinned Kiwi UI core patch to a post-Titanium Chromium tree."""
+"""Apply feature-scoped Kiwi UI patches to a post-Titanium Chromium tree."""
 
 from __future__ import annotations
 
@@ -10,39 +10,52 @@ from pathlib import Path
 import subprocess
 import sys
 
-
 HERE = Path(__file__).resolve().parent
 MANIFEST = json.loads((HERE / "manifest.json").read_text(encoding="utf-8"))
-PATCH = HERE / "kiwi-ui-core.patch"
+SERIES = json.loads((HERE / "patches/series.json").read_text(encoding="utf-8"))
 
 
 def digest(path: Path) -> str | None:
-    if not path.is_file():
-        return None
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
-def run_git(source: Path, *args: str) -> None:
-    completed = subprocess.run(
-        ["git", "-C", str(source), *args], text=True, capture_output=True
-    )
-    if completed.returncode:
+def git(source: Path, *args: str, check: bool = False) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(["git", "-C", str(source), *args], text=True, capture_output=True)
+    if check and completed.returncode:
         detail = completed.stderr.strip() or completed.stdout.strip()
         raise RuntimeError(detail or f"git {' '.join(args)} failed")
+    return completed
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("source", type=Path, help="post-Titanium Chromium src directory")
-    args = parser.parse_args()
-    source = args.source.resolve()
-    if not (source / ".git").exists():
-        raise RuntimeError(f"not a Chromium git tree: {source}")
+def safe_relative(relative: str) -> Path:
+    path = Path(relative)
+    if path.is_absolute() or ".." in path.parts:
+        raise RuntimeError(f"unsafe patch path: {relative}")
+    return path
 
+
+def write_report(report: Path, source: Path, results: list[dict[str, object]]) -> None:
+    report.parent.mkdir(parents=True, exist_ok=True)
+    conflicts = [item for item in results if item["status"] == "conflict"]
+    lines = [
+        "# Kiwi patch reapplication report", "", f"Source: `{source}`", "",
+        "| Feature | Status | Files requiring repair |", "|---|---|---|",
+    ]
+    for item in results:
+        files = "<br>".join(f"`{path}`" for path in item.get("conflicts", [])) or "—"
+        lines.append(f"| `{item['id']}` — {item['name']} | {item['status']} | {files} |")
+    if conflicts:
+        lines += ["", "Clean hunks and later independent features were applied. Rejected hunks are in the listed `.rej` files.", "Repair only those files, remove the `.rej` files, then regenerate the feature patches."]
+    else:
+        lines += ["", "All feature patches applied without conflicts."]
+    report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    report.with_suffix(".json").write_text(json.dumps({"source": str(source), "features": results}, indent=2) + "\n", encoding="utf-8")
+
+
+def file_states(source: Path) -> dict[str, str]:
     states: dict[str, str] = {}
     for relative, expected in MANIFEST["files"].items():
-        if relative.startswith("/") or ".." in Path(relative).parts:
-            raise RuntimeError(f"unsafe manifest path: {relative}")
+        safe_relative(relative)
         actual = digest(source / relative)
         if actual == expected["after_sha256"]:
             states[relative] = "after"
@@ -50,40 +63,97 @@ def main() -> int:
             states[relative] = "before"
         else:
             states[relative] = "mismatch"
+    return states
 
-    mismatches = [path for path, state in states.items() if state == "mismatch"]
 
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source", type=Path, help="post-Titanium Chromium src directory")
+    parser.add_argument("--best-effort", action="store_true", help="apply clean hunks/features and leave .rej files for upstream conflicts")
+    parser.add_argument("--report", type=Path, help="write Markdown and JSON reports")
+    args = parser.parse_args()
+    source = args.source.resolve()
+    if not (source / ".git").exists():
+        raise RuntimeError(f"not a Chromium git tree: {source}")
+
+    states = file_states(source)
     if all(state == "after" for state in states.values()):
-        print("Kiwi UI core patch is already applied.")
+        print("Kiwi UI feature patches are already applied.")
+        if args.report:
+            write_report(
+                args.report.resolve(),
+                source,
+                [
+                    {
+                        "id": feature["id"],
+                        "name": feature["name"],
+                        "patch": feature["patch"],
+                        "status": "already-applied",
+                        "conflicts": [],
+                    }
+                    for feature in SERIES["features"]
+                ],
+            )
         return 0
-    if any(state == "after" for state in states.values()):
-        mixed = [f"{path}: {state}" for path, state in states.items()]
-        raise RuntimeError("partially applied source:\n  " + "\n  ".join(mixed))
 
-    # Titanium's shell patch layer can produce a small baseline difference as
-    # its version-gated edits evolve. Exact hashes remain the fast path, but an
-    # unknown preimage is accepted only when every unified-diff hunk still
-    # passes git's contextual check. This is safer than disabling validation
-    # and keeps the port usable across harmless downstream edits.
-    if mismatches:
-        details = "\n  ".join(
-            f"{path}: {digest(source / path) or 'missing'}" for path in mismatches
-        )
-        print("WARNING: baseline hash differs; validating patch context:\n  " + details)
+    pinned_before = all(state == "before" for state in states.values())
+    if not args.best_effort:
+        # Preflight the complete series before changing any file. Feature
+        # patches own disjoint files, so every contextual check can be done
+        # against the same untouched tree.
+        failures = []
+        for feature in SERIES["features"]:
+            patch = HERE / "patches" / safe_relative(feature["patch"])
+            if digest(patch) != feature["sha256"]:
+                raise RuntimeError(f"patch checksum mismatch: {patch.name}")
+            forward = git(source, "apply", "--check", str(patch)).returncode == 0
+            reverse = git(source, "apply", "--reverse", "--check", str(patch)).returncode == 0
+            if not forward and not reverse:
+                failures.append(feature)
+        if failures:
+            details = "\n".join(
+                f"  {feature['id']} ({feature['name']}): " + ", ".join(feature["files"])
+                for feature in failures
+            )
+            raise RuntimeError(
+                "strict preflight failed; source was not changed:\n" + details
+                + "\nrerun with --best-effort --report <path> to isolate conflicts"
+            )
 
-    run_git(source, "apply", "--check", str(PATCH))
-    run_git(source, "apply", str(PATCH))
+    results: list[dict[str, object]] = []
+    for feature in SERIES["features"]:
+        patch = HERE / "patches" / safe_relative(feature["patch"])
+        if digest(patch) != feature["sha256"]:
+            raise RuntimeError(f"patch checksum mismatch: {patch.name}")
+        item: dict[str, object] = {"id": feature["id"], "name": feature["name"], "patch": feature["patch"], "status": "pending", "conflicts": []}
+        if git(source, "apply", "--reverse", "--check", str(patch)).returncode == 0:
+            item["status"] = "already-applied"
+        elif git(source, "apply", "--check", str(patch)).returncode == 0:
+            git(source, "apply", "--whitespace=nowarn", str(patch), check=True)
+            item["status"] = "applied"
+        elif not args.best_effort:
+            files = "\n  ".join(feature["files"])
+            raise RuntimeError(f"feature {feature['id']} ({feature['name']}) does not apply cleanly:\n  {files}\nrerun with --best-effort --report <path> to apply independent clean changes")
+        else:
+            git(source, "apply", "--reject", "--whitespace=nowarn", str(patch))
+            rejected = [str(safe_relative(path)) for path in feature["files"] if (source / f"{path}.rej").is_file()]
+            item["status"] = "conflict"
+            item["conflicts"] = rejected or feature["files"]
+        results.append(item)
 
-    bad = [
-        path
-        for path, expected in MANIFEST["files"].items()
-        if states[path] == "before"
-        and digest(source / path) != expected["after_sha256"]
-    ]
-    if bad:
-        raise RuntimeError("post-apply verification failed: " + ", ".join(bad))
-
-    print(f"Applied Kiwi UI core patch to {len(states)} files.")
+    if args.report:
+        write_report(args.report.resolve(), source, results)
+    conflicts = [item for item in results if item["status"] == "conflict"]
+    if conflicts:
+        for item in conflicts:
+            print(f"CONFLICT {item['id']} ({item['name']}): " + ", ".join(item["conflicts"]), file=sys.stderr)
+        return 2
+    if pinned_before:
+        after = file_states(source)
+        bad = [path for path, state in after.items() if state != "after"]
+        if bad:
+            raise RuntimeError("pinned post-apply verification failed: " + ", ".join(bad))
+    print(f"Applied/verified {len(results)} Kiwi UI feature patches.")
     return 0
 
 

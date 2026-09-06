@@ -1,0 +1,62 @@
+diff --git a/chrome/browser/chrome_browser_field_trials.cc b/chrome/browser/chrome_browser_field_trials.cc
+index ed7c245e58c096b7a4b32abfdade51559e3b2bfb..6be9ea1e6b6b76ade68e8e2ab07699e3d164327b 100644
+--- a/chrome/browser/chrome_browser_field_trials.cc
++++ b/chrome/browser/chrome_browser_field_trials.cc
+@@ -133,7 +133,7 @@ void ChromeBrowserFieldTrials::RegisterFeatureOverrides(
+     feature_overrides.DisableFeature(features::kEyeDropper);
+   }
+ #elif BUILDFLAG(IS_ANDROID)  // BUILDFLAG(IS_LINUX)
+-feature_overrides.EnableFeature(chrome::android::kSubmenusInAppMenu);
++feature_overrides.DisableFeature(chrome::android::kSubmenusInAppMenu);
+ feature_overrides.EnableFeature(features::kAndroidDevToolsFrontend);
+ feature_overrides.EnableFeature(kAndroidMediaPicker);
+ feature_overrides.EnableFeature(features::kUserMediaScreenCapturing);
+@@ -142,7 +142,7 @@ feature_overrides.EnableFeature(media::kAutoPictureInPictureAndroid);
+ feature_overrides.EnableFeature(media::kContextMenuPictureInPictureAndroid);
+ feature_overrides.EnableFeature(chrome::android::kLoadAllTabsAtStartup);
+ feature_overrides.EnableFeature(chrome::android::kChromeNativeUrlOverriding);
+-feature_overrides.EnableFeature(chrome::android::kAndroidBottomBar);
++feature_overrides.DisableFeature(chrome::android::kAndroidBottomBar);
+ #if 0
+   // Nota bene: Anything here is expected to be short-lived, unless deemed too
+   // risky to launch to non-desktop platforms. New features being added here
+diff --git a/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java b/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
+index f21095b43e150f63e3e2fd3ce2d0a6b88abd290b..3d2da0a0ce112613c1663e8a952cbda510b8d675 100644
+--- a/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
++++ b/chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java
+@@ -780,7 +780,7 @@ public abstract class ChromeFeatureList {
+     public static final CachedFlag sAndroidAutoMintedTwa =
+             newCachedFlag(ANDROID_AUTO_MINTED_TWA, false);
+     public static final CachedFlag sAndroidBottomBar =
+-            newCachedFlag(ANDROID_BOTTOM_BAR, true, /* defaultValueInTests= */ true);
++            newCachedFlag(ANDROID_BOTTOM_BAR, false, /* defaultValueInTests= */ true);
+     public static final CachedFlag sAndroidBottomBarAim =
+             newCachedFlag(ANDROID_BOTTOM_BAR_AIM, false);
+     public static final CachedFlag sAndroidElegantTextHeight =
+diff --git a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
+index 04fd644b7e1898491aa789edc8e8486f901f1d60..ff64ab86c33be43bb27f0c30f9ad4694e84f8e7e 100644
+--- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
++++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
+@@ -394,7 +394,8 @@ class AppMenu implements OnKeyListener {
+ 
+         View contentView = createAppMenuContentView(context, addTopPaddingBeforeFirstRow);
+ 
+-        if (SysUtils.isLowEndDevice()) {
++        // Kiwi uses a compact 8dp menu shape on all devices.
++        {
+             var sharedDrawable = AppCompatResources.getDrawable(context, R.drawable.popup_bg_8dp);
+             if (sharedDrawable != null) {
+                 var drawable = sharedDrawable.mutate();
+diff --git a/components/browser_ui/styles/android/java/res/values/styles.xml b/components/browser_ui/styles/android/java/res/values/styles.xml
+index 2876f1d44b33835568a2f7ca3ed66134cc935711..69d0f1a94c1a929212784e5fdebeb2d6e0c11eb8 100644
+--- a/components/browser_ui/styles/android/java/res/values/styles.xml
++++ b/components/browser_ui/styles/android/java/res/values/styles.xml
+@@ -126,7 +126,7 @@ found in the LICENSE file.
+     <!-- Expressive styling for an icon in an overflow menu icon row. -->
+     <style name="OverflowMenuButton" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
+         <item name="materialSizeOverlay">?attr/iconRowButtonSizeOverlay</item>
+-        <item name="backgroundTint">@color/tonal_button_bg_list</item>
++        <item name="backgroundTint">@android:color/transparent</item>
+         <item name="iconTint">@color/tonal_button_icon_tint_list</item>
+         <item name="shapeAppearance">@xml/expressive_button_shape_state_list</item>
+     </style>
