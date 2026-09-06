@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: titanium-kiwi-core-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   stage-1:
@@ -30,8 +30,8 @@ jobs:
       - id: build
         uses: ./.github/actions/kiwi-build-stage
         with:
-          restore-key: ${{ inputs.incremental_cache_key }}
-          require-restore: ${{ inputs.incremental_cache_key != '' }}
+          restore-key: kiwi-b77748236dd79ce204fee2854c23769464fc819b-stage-5
+          require-restore: true
           save-key: kiwi-${{ github.sha }}-stage-1
           final-cache-key: kiwi-incremental-${{ github.sha }}-stage-1
 
