@@ -77,7 +77,14 @@ runs:
     - name: Make restored outputs newer than the identical fresh source tree
       if: inputs.restore-key != ''
       shell: bash
-      run: find work/titanium/chromium/src/out/Default -type f -exec touch {} +
+      run: |
+        # Give every restored file one identical timestamp. Touching files in
+        # traversal order makes generated headers newer than their consumers
+        # and causes Ninja to rebuild an otherwise reusable checkpoint.
+        stamp="$(mktemp)"
+        touch "$stamp"
+        find work/titanium/chromium/src/out/Default -type f -exec touch -r "$stamp" {} +
+        rm -f "$stamp"
 
     - name: Continue arm64 APK compilation for at most 210 minutes
       id: compile
