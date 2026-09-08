@@ -74,17 +74,17 @@ runs:
         key: ${{ inputs.restore-key }}
         fail-on-cache-miss: ${{ inputs.require-restore == 'true' }}
 
-    - name: Make restored outputs newer than the identical fresh source tree
+    - name: Preserve Ninja history and age the identical fresh source tree
       if: inputs.restore-key != ''
       shell: bash
       run: |
-        # Give every restored file one identical timestamp. Touching files in
-        # traversal order makes generated headers newer than their consumers
-        # and causes Ninja to rebuild an otherwise reusable checkpoint.
-        stamp="$(mktemp)"
-        touch "$stamp"
-        find work/titanium/chromium/src/out/Default -type f -exec touch -r "$stamp" {} +
-        rm -f "$stamp"
+        # Never touch restored outputs: .ninja_log records their exact mtimes.
+        # A fresh checkout makes identical sources look newer than the cached
+        # outputs, so age only source-side files to keep Ninja's history valid.
+        find work/titanium/chromium/src \
+          -path '*/.git' -prune -o \
+          -path '*/out' -prune -o \
+          -type f -exec touch -d '@946684800' {} +
 
     - name: Continue arm64 APK compilation for at most 210 minutes
       id: compile
