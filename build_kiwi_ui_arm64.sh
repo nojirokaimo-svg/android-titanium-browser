@@ -28,10 +28,28 @@ git -C "$TITANIUM_DIR" submodule update --init --recursive --depth 1
 test "$(git -C "$TITANIUM_DIR/vanadium" rev-parse HEAD)" = "$VANADIUM_COMMIT"
 
 export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update
+# GitHub's Ubuntu image includes a Google Chrome APT source that is not needed
+# for this Android build. Its Release and Packages files can briefly disagree
+# while Google publishes an update, causing an unrelated Hash Sum mismatch.
+# Disable only that runner-provided source and retry transient APT failures.
+sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+apt_update() {
+  local attempt
+  for attempt in 1 2 3; do
+    if sudo apt-get -o Acquire::Retries=3 update; then
+      return 0
+    fi
+    echo "APT update attempt $attempt failed; retrying after mirror propagation." >&2
+    sudo rm -rf /var/lib/apt/lists/partial/*
+    sleep $((attempt * 15))
+  done
+  echo "APT update failed after 3 attempts." >&2
+  return 1
+}
+apt_update
 sudo apt-get install -y sudo lsb-release file git curl python3 python3-pillow imagemagick librsvg2-bin ninja-build
 sudo dpkg --add-architecture i386
-sudo apt-get update
+apt_update
 sudo apt-get install -y libgcc-s1:i386
 
 if [[ ! -d "$BUILD_ROOT/depot_tools/.git" ]]; then
