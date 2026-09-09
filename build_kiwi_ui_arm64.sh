@@ -138,7 +138,7 @@ s = s.replace('is_debug = false', 'is_debug = true')
 s = s.replace('is_official_build = true', 'is_official_build = false')
 s = s.replace('symbol_level = 1', 'symbol_level = 0')
 s = s.replace('generate_linker_map = true', 'generate_linker_map = false')
-s += '\nblink_symbol_level = 0\nv8_symbol_level = 0\nuse_thin_lto = false\n'
+s += '\nblink_symbol_level = 0\nv8_symbol_level = 0\nuse_thin_lto = false\ntreat_warnings_as_errors = false\n'
 p.write_text(s, encoding="utf-8")
 PY
 
