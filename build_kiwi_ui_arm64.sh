@@ -97,6 +97,28 @@ elif [[ "$PATCH_MODE" != "strict" ]]; then
 fi
 python3 "$KIT_ROOT/kiwi_port/apply.py" "$PWD" "${PATCH_ARGS[@]}"
 
+# The local-backend fallback accepts ManagePasswordsReferrer, not the distinct
+# PasswordCheckReferrer enum. Do not suppress WrongConstant or cast the integer.
+python3 - <<'PY'
+from pathlib import Path
+p = Path("chrome/browser/password_manager/android/java/src/org/chromium/chrome/browser/password_manager/PasswordManagerHelper.java")
+s = p.read_text()
+start = s.index("    void launchPasswordCheckup(")
+end = s.index("        PasswordCheckupClientHelper checkupClient;", start)
+block = s[start:end]
+old = "                    context, referrer);"
+new = """                    context,
+                    referrer == PasswordCheckReferrer.SAFETY_CHECK
+                            ? ManagePasswordsReferrer.SAFETY_CHECK
+                            : referrer == PasswordCheckReferrer.LEAK_DIALOG
+                                            || referrer == PasswordCheckReferrer.PHISHED_WARNING_DIALOG
+                                    ? ManagePasswordsReferrer.PASSWORD_BREACH_DIALOG
+                                    : ManagePasswordsReferrer.CHROME_SETTINGS);"""
+if block.count(old) != 1:
+    raise SystemExit("CONFLICT password-check-referrer: " + str(p))
+p.write_text(s[:start] + block.replace(old, new) + s[end:])
+PY
+
 cp "$TITANIUM_DIR/args.gn" out/Default/args.gn
 python3 - <<'PY'
 from pathlib import Path
@@ -154,6 +176,15 @@ if [[ -n "${KIWI_BUILD_BUDGET_MINUTES:-}" ]]; then
     "${BUILD_COMMAND[@]}" || BUILD_STATUS=$?
 else
   "${BUILD_COMMAND[@]}" || BUILD_STATUS=$?
+fi
+
+# A stale APK in a restored checkpoint must never conceal a failed command.
+if [[ "$BUILD_STATUS" -ne 0 && "$BUILD_STATUS" -ne 124 && "$BUILD_STATUS" -ne 130 && "$BUILD_STATUS" -ne 137 ]]; then
+  exit "$BUILD_STATUS"
+fi
+if [[ "$BUILD_STATUS" -ne 0 ]]; then
+  echo "Build interrupted; preserve checkpoint, do not publish a cached APK."
+  exit 0
 fi
 
 APK="$(find out/Default/apks -type f -name 'Chrome*.apk' 2>/dev/null | sort | head -n 1 || true)"
