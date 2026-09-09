@@ -85,8 +85,12 @@ runs:
           -path '*/.git' -prune -o \
           -path '*/out' -prune -o \
           -type f -exec touch -d '@946684800' {} +
-        # This source changed relative to the restored checkpoint. Keep it newer.
-        touch work/titanium/chromium/src/chrome/browser/password_manager/android/java/src/org/chromium/chrome/browser/password_manager/PasswordManagerHelper.java
+        # Reconcile a cached GN graph only when build arguments changed.
+        args=work/titanium/chromium/src/out/Default/args.gn
+        if ! grep -qx 'treat_warnings_as_errors = false' "$args"; then
+          echo 'treat_warnings_as_errors = false' >> "$args"
+          PATH="$GITHUB_WORKSPACE/work/depot_tools:$PATH" gn gen work/titanium/chromium/src/out/Default
+        fi
 
     - name: Continue arm64 APK compilation for at most 210 minutes
       id: compile
