@@ -100,9 +100,22 @@ runs:
         mkdir -p output
         # Fail on Java/Lint errors before spending hours on native compilation.
         if [[ -f work/titanium/chromium/src/out/Default/.ninja_log ]]; then
+          set +e
           timeout --signal=INT --kill-after=2m 30m env INVOKED_BY_BUILD_SERVER=1 /usr/bin/ninja \
             -C work/titanium/chromium/src/out/Default -j 4 \
             obj/chrome/android/chrome_public_apk__lint/build.lint.stamp 2>&1 | tee output/lint.log
+          lint_status=("${PIPESTATUS[@]}")
+          set -e
+          if [[ "${lint_status[1]}" -ne 0 ]]; then
+            exit "${lint_status[1]}"
+          fi
+          if [[ "${lint_status[0]}" -eq 124 ]]; then
+            echo "Lint dependency budget reached; save checkpoint and continue in next stage."
+            exit 0
+          fi
+          if [[ "${lint_status[0]}" -ne 0 ]]; then
+            exit "${lint_status[0]}"
+          fi
         fi
         ./build_kiwi_ui_arm64.sh 2>&1 | tee output/build.log
 
