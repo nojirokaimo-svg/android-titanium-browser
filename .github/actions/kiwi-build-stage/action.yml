@@ -89,7 +89,7 @@ runs:
         args=work/titanium/chromium/src/out/Default/args.gn
         if ! grep -qx 'treat_warnings_as_errors = false' "$args"; then
           echo 'treat_warnings_as_errors = false' >> "$args"
-          PATH="$GITHUB_WORKSPACE/work/depot_tools:$PATH" gn gen work/titanium/chromium/src/out/Default
+          (cd work/titanium/chromium/src && PATH="$GITHUB_WORKSPACE/work/depot_tools:$PATH" gn gen out/Default)
         fi
 
     - name: Continue arm64 APK compilation for at most 210 minutes
