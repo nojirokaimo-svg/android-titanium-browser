@@ -72,7 +72,7 @@ runs:
       with:
         path: work/titanium/chromium/src/out/Default
         key: ${{ inputs.restore-key }}
-        fail-on-cache-miss: ${{ inputs.require-restore == 'true' }}
+        fail-on-cache-miss: true
 
     - name: Preserve Ninja history and age the identical fresh source tree
       if: inputs.restore-key != ''
@@ -85,6 +85,8 @@ runs:
           -path '*/.git' -prune -o \
           -path '*/out' -prune -o \
           -type f -exec touch -d '@946684800' {} +
+        # This source changed relative to the restored checkpoint. Keep it newer.
+        touch work/titanium/chromium/src/chrome/browser/password_manager/android/java/src/org/chromium/chrome/browser/password_manager/PasswordManagerHelper.java
 
     - name: Continue arm64 APK compilation for at most 210 minutes
       id: compile
@@ -94,7 +96,15 @@ runs:
         KIWI_BUILD_BUDGET_MINUTES: "210"
         KIWI_INCREMENTAL_NINJA: ${{ inputs.restore-key != '' }}
         CHROMIUM_VERSION: ${{ inputs.chromium-version }}
-      run: ./build_kiwi_ui_arm64.sh
+      run: |
+        mkdir -p output
+        # Fail on Java/Lint errors before spending hours on native compilation.
+        if [[ -f work/titanium/chromium/src/out/Default/.ninja_log ]]; then
+          timeout --signal=INT --kill-after=2m 30m env INVOKED_BY_BUILD_SERVER=1 /usr/bin/ninja \
+            -C work/titanium/chromium/src/out/Default -j 4 \
+            obj/chrome/android/chrome_public_apk__lint/build.lint.stamp 2>&1 | tee output/lint.log
+        fi
+        ./build_kiwi_ui_arm64.sh 2>&1 | tee output/build.log
 
     - name: Record result and checkpoint size
       id: result
@@ -109,7 +119,7 @@ runs:
         fi
 
     - name: Save compile checkpoint
-      if: steps.compile.outcome == 'success' && steps.result.outputs.done != 'true'
+      if: ${{ always() && steps.compile.outcome != 'skipped' && steps.result.outputs.done != 'true' && hashFiles('work/titanium/chromium/src/out/Default/.ninja_log') != '' }}
       uses: actions/cache/save@v4
       with:
         path: work/titanium/chromium/src/out/Default
@@ -141,7 +151,9 @@ runs:
         path: |
           work/titanium/chromium/src/out/Default/args.gn
           work/titanium/chromium/src/out/Default/*.log
+          output/*.log
           output/kiwi-patch-report.*
           work/titanium/chromium/src/**/*.rej
+        include-hidden-files: true
         if-no-files-found: ignore
         retention-days: 7
