@@ -46,7 +46,27 @@
         "chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java",
         "base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java"
       ],
-      "sha256": "0800327623221a14bf4ebe440c90ab75e4fd55c3a7e1e076ad9c59c77918c73f"
+      "sha256": "ae717429860c1297620710757b88c143e3f13fdf0d9127119bab7283a6ffdf61"
+    },
+    {
+      "id": "night-mode-presets",
+      "name": "Six Kiwi Night mode presets on the Chromium 152 renderer path",
+      "patch": "050-night-mode-presets.patch",
+      "files": [
+        "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java",
+        "chrome/browser/ui/android/night_mode/BUILD.gn",
+        "chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml",
+        "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml",
+        "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml",
+        "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java",
+        "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc",
+        "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h",
+        "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc",
+        "third_party/blink/renderer/platform/graphics/dark_mode_settings.h",
+        "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc",
+        "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"
+      ],
+      "sha256": "adf8cd873a88a9f4c6294a1980cef477328d04dd3270004683543235a3c94aa5"
     }
   ]
 }

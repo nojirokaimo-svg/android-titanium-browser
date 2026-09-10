@@ -1,40 +1,5 @@
-diff --git a/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java b/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
-index a95ba4d704447a0f242d39d751de0a07419cebc2..ed2b07edaf74c9f1ab4e11a8a2b30535539f9a50 100644
---- a/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
-+++ b/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
-@@ -63,10 +63,6 @@ class StrictPreferenceKeyChecker implements PreferenceKeyChecker {
-      * @return Whether |key| is in use.
-      */
-     private boolean isKeyInUse(String key) {
--        if (SharedPrefsUtils.isKeyInUse(key)) {
--            return true;
--        }
--
-         // For non-dynamic legacy keys, a simple map check is enough.
-         if (mRegistry.mLegacyFormatKeys.contains(key)) {
-             return true;
-diff --git a/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java b/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
-index 76809074a6cb56ef5da64d8114e6d4555990ce40..dfe8d590182d90edd40f60ad0ed0e170a054a350 100644
---- a/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
-+++ b/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
-@@ -8,6 +8,7 @@ import androidx.annotation.VisibleForTesting;
- 
- import org.chromium.base.shared_preferences.KnownPreferenceKeyRegistries;
- import org.chromium.base.shared_preferences.PreferenceKeyRegistry;
-+import org.chromium.base.shared_preferences.SharedPrefsUtils;
- import org.chromium.build.annotations.CheckDiscard;
- import org.chromium.build.annotations.NullMarked;
- import org.chromium.components.cached_flags.CachedFlagsSharedPreferences;
-@@ -21,6 +22,7 @@ public class AllPreferenceKeyRegistries {
-     static final Set<PreferenceKeyRegistry> KNOWN_REGISTRIES =
-             Set.of(
-                     ChromeSharedPreferences.REGISTRY,
-+                    SharedPrefsUtils.REGISTRY,
-                     CachedFlagsSharedPreferences.REGISTRY,
-                     MultiInstanceSharedPreferences.REGISTRY);
- 
 diff --git a/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java b/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
-index e9f9abe73111dd169d6fb576c3fea841480aaf5b..ac33c4e809e5d17385399eed5f45ccad2f295407 100644
+index e9f9abe..7c4cdef 100644
 --- a/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
 +++ b/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
 @@ -1,8 +1,9 @@
@@ -49,13 +14,14 @@ index e9f9abe73111dd169d6fb576c3fea841480aaf5b..ac33c4e809e5d17385399eed5f45ccad
  
  /**
   * Wrapper utility class for both (Base)ChromePreferenceKeys and SharedPreferencesManager,
-@@ -125,17 +126,20 @@ public final class SharedPrefsUtils {
+@@ -123,19 +124,38 @@ public final class SharedPrefsUtils {
+                 new BoolSharedPref("close_tabs_on_exit", false);
+         public static final BoolSharedPref OPEN_LINKS_IN_INCOGNITO =
                  new BoolSharedPref("open_links_in_incognito", false);
++        public static final IntSharedPref NIGHT_MODE_PRESET =
++                new IntSharedPref("titanium.night_mode_preset", 0, new int[] {0, 1, 2, 3, 4, 5});
      }
  
--    static SharedPreferencesManager getSharedPrefManager() {
--        return SharedPreferencesManager.getInstanceForRegistry(null);
--    }
 +    // Keep the existing on-disk names as explicitly registered legacy keys.
 +    // The registry is absent only in builds where Chromium removes key checking.
 +    public static final @Nullable PreferenceKeyRegistry REGISTRY =
@@ -65,9 +31,15 @@ index e9f9abe73111dd169d6fb576c3fea841480aaf5b..ac33c4e809e5d17385399eed5f45ccad
 +                            List.of(),
 +                            List.of(
 +                                    SharedPrefsExt.CLOSE_TABS_ON_EXIT.getKey(),
-+                                    SharedPrefsExt.OPEN_LINKS_IN_INCOGNITO.getKey()),
++                                    SharedPrefsExt.OPEN_LINKS_IN_INCOGNITO.getKey(),
++                                    SharedPrefsExt.NIGHT_MODE_PRESET.getKey()),
 +                            List.of())
 +                    : null;
++
+     static SharedPreferencesManager getSharedPrefManager() {
+-        return SharedPreferencesManager.getInstanceForRegistry(null);
++        return SharedPreferencesManager.getInstanceForRegistry(REGISTRY);
+     }
  
 -    @CheckDiscard("Validation is performed in tests and in debug builds.")
 -    static boolean isKeyInUse(String key) {
@@ -77,7 +49,49 @@ index e9f9abe73111dd169d6fb576c3fea841480aaf5b..ac33c4e809e5d17385399eed5f45ccad
 -            SharedPrefsExt.OPEN_LINKS_IN_INCOGNITO.getKey()
 -        ).contains(key);
 -        // clang-format on
-+    static SharedPreferencesManager getSharedPrefManager() {
-+        return SharedPreferencesManager.getInstanceForRegistry(REGISTRY);
++    /** Serialized Blink settings for the six Kiwi-compatible Night mode presets. */
++    public static String getNightModeSettingsSwitchValue() {
++        return switch (SharedPrefsExt.NIGHT_MODE_PRESET.get()) {
++            case 2 -> "ContrastPercent=0,ImageGrayScalePercent=1";
++            case 3 -> "ContrastPercent=0.15,ImageGrayScalePercent=0.15";
++            case 4 -> "ContrastPercent=0.15,ImageGrayScalePercent=1";
++            case 5 ->
++                    "ContrastPercent=-0.15,ImageGrayScalePercent=0.15,IncreaseTextContrast=1";
++            // Default and AMOLED intentionally share renderer parameters, as in Kiwi.
++            default -> "ContrastPercent=0,ImageGrayScalePercent=0.15";
++        };
      }
  }
+diff --git a/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java b/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
+index a95ba4d..ed2b07e 100644
+--- a/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
++++ b/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
+@@ -63,10 +63,6 @@ class StrictPreferenceKeyChecker implements PreferenceKeyChecker {
+      * @return Whether |key| is in use.
+      */
+     private boolean isKeyInUse(String key) {
+-        if (SharedPrefsUtils.isKeyInUse(key)) {
+-            return true;
+-        }
+-
+         // For non-dynamic legacy keys, a simple map check is enough.
+         if (mRegistry.mLegacyFormatKeys.contains(key)) {
+             return true;
+diff --git a/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java b/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
+index 7680907..dfe8d59 100644
+--- a/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
++++ b/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
+@@ -9,5 +9,6 @@ import androidx.annotation.VisibleForTesting;
+ import org.chromium.base.shared_preferences.KnownPreferenceKeyRegistries;
+ import org.chromium.base.shared_preferences.PreferenceKeyRegistry;
++import org.chromium.base.shared_preferences.SharedPrefsUtils;
+ import org.chromium.build.annotations.CheckDiscard;
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.components.cached_flags.CachedFlagsSharedPreferences;
+@@ -21,5 +22,6 @@ public class AllPreferenceKeyRegistries {
+     static final Set<PreferenceKeyRegistry> KNOWN_REGISTRIES =
+             Set.of(
+                     ChromeSharedPreferences.REGISTRY,
++                    SharedPrefsUtils.REGISTRY,
+                     CachedFlagsSharedPreferences.REGISTRY,
+                     MultiInstanceSharedPreferences.REGISTRY);
