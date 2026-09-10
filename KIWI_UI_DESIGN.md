@@ -153,7 +153,21 @@ Chromium152のTabListCoordinatorはGRID/STRIP中心で、コンパクト幅の�
 
 先行してSolが扱える部分: 現行WebContentsDarkModeControllerのglobal設定・サイト例外・UIテーマの整合、メニューON/OFF、再起動後の状態復元。AUTO_DARK_WEB_CONTENTだけでなく現在のUI夜間状態も有効条件になっている点に注意。通常/シークレットのどちらから操作しても保存方針を統一し、サイト例外を消去しない。設定画面からテーマを変更した後に「古いテーマ」を誤復元しない設計にする。
 
-Astraで詰める部分: 現行dark_mode_settings/filter/color_filter、WebPreferences伝播と既存テストを比較し、旧演算を最小追加するのか、現行演算で同等結果を出せるのか決定する。必要な設定型・プロセス間伝播・キャッシュ更新・再起動要否まで定義する。プロセス共通の起動スイッチは即時切替と複数プロファイルに制約があるため、実装前に判断する。旧Blinkファイルの丸ごと置換やページ全体へのCSS filterで代用しない。写真、透明画像、SVG、canvas、動画、iframe、既に暗いサイトで基準Kiwiと比較する。
+Astra設計結果: Chromium 152が既にbrowserからrendererへ許可リスト付きで転送する
+`blink::switches::kDarkModeSettings`を伝播境界として使う。設定は旧Kiwiと同じ
+app-global値とし、`ProcessInitializationHandler.handlePreNativeLibraryLoadInitialization()`で
+登録済みSharedPreferencesから読み、ContentMainRunner開始前にswitchへ追加する。renderer側の
+`GetCurrentDarkModeSettings()`はstaticなので、選択変更後は既存rendererへ半端に即時反映せず、
+Chromiumの`BrowserRestartActivity`経路で明示的に再起動する。サイト別ON/OFFは従来どおり
+`AUTO_DARK_WEB_CONTENT`へ残し、プリセット変更で例外を消去しない。
+
+renderer実装はChromium 152のLAB変換・色分類・画像分類を基盤にする。旧Blink一式を戻さず、
+`DarkModeSettings`へpreset、contrast、image grayscale、high-contrast指定だけを追加し、
+builderで許可した値をclampして構築する。色変換は現在のLAB filterへ設定を注入し、画像は
+現在のsmart classification後にのみgrayscale量を合成する。動画・canvasへページ全体のCSS
+filterを掛ける代用はしない。default/AMOLED、color/grayscale、gray、高コントラストの各意図を
+独立したrendererテストで固定する。無効値、既に暗い背景、透明画像、SVG、写真、iframeも
+回帰対象にする。
 
 ## 5. 着手済み試作の監査
 

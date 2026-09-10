@@ -49,6 +49,18 @@
     "components/browser_ui/styles/android/java/res/values/styles.xml": {
       "before_sha256": "179085a02c1477fe0dddfa5024d075cb22b5dcc2d74ac379a4a90e4eac98e5b8",
       "after_sha256": "b4acafcde513d4a12f6151df422e0ab4989cf0824862579f1e73d166f6ecd4e7"
+    },
+    "base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java": {
+      "before_sha256": "b07be3e4e0395fec2e4755199aed5fd9523e81b50e39dafc6dc8396ddd7a4c7b",
+      "after_sha256": "055edeff4d856217b9467953a8483f70392b5d2df79fc6970720c9a2ffaad986"
+    },
+    "chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java": {
+      "before_sha256": "b7e4c1aa25e1715c39ac9fb197627f7fbd4f62dca309abe242ab5fd09b95d530",
+      "after_sha256": "fdd6c82d4bd7ca4a6b99732f9701b6de0f9f5d80b63689d9446fe2a7680291f0"
+    },
+    "base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java": {
+      "before_sha256": "bec8e43d685db44ca81c0220eb206416212a3643895e01c5b4a70a83e47ac9ed",
+      "after_sha256": "52d28fcc4ba0686494e1e9770031c36968f0ecd2d98e20017f90a0122f696302"
     }
   }
 }

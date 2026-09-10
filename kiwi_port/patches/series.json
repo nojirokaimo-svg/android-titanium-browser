@@ -36,6 +36,17 @@
         "components/browser_ui/styles/android/java/res/values/styles.xml"
       ],
       "sha256": "3c3a86d003ca980e2e176efc28deba747c2840ba76309cc1a55141b3ad2d1ccf"
+    },
+    {
+      "id": "preference-registry",
+      "name": "Titanium preference registry and startup crash fix",
+      "patch": "040-preference-registry.patch",
+      "files": [
+        "base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java",
+        "chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java",
+        "base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java"
+      ],
+      "sha256": "0800327623221a14bf4ebe440c90ab75e4fd55c3a7e1e076ad9c59c77918c73f"
     }
   ]
 }

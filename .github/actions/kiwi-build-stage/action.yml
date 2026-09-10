@@ -74,17 +74,13 @@ runs:
         key: ${{ inputs.restore-key }}
         fail-on-cache-miss: true
 
-    - name: Preserve Ninja history and age the identical fresh source tree
+    - name: Preserve Ninja history and expose only genuinely changed sources
       if: inputs.restore-key != ''
       shell: bash
       run: |
-        # Never touch restored outputs: .ninja_log records their exact mtimes.
-        # A fresh checkout makes identical sources look newer than the cached
-        # outputs, so age only source-side files to keep Ninja's history valid.
-        find work/titanium/chromium/src \
-          -path '*/.git' -prune -o \
-          -path '*/out' -prune -o \
-          -type f -exec touch -d '@946684800' {} +
+        python3 kiwi_port/incremental_sources.py work/titanium/chromium/src \
+          --cache-key '${{ inputs.restore-key }}' \
+          --identity '${{ inputs.titanium-commit }}:${{ inputs.vanadium-commit }}:${{ inputs.chromium-commit }}:validation'
         # Reconcile a cached GN graph only when build arguments changed.
         args=work/titanium/chromium/src/out/Default/args.gn
         if ! grep -qx 'treat_warnings_as_errors = false' "$args"; then
@@ -102,6 +98,30 @@ runs:
         CHROMIUM_VERSION: ${{ inputs.chromium-version }}
       run: |
         mkdir -p output
+        plan=work/titanium/chromium/src/out/Default/kiwi-incremental-plan.json
+        if [[ -f "$plan" ]] && python3 - "$plan" <<'PY'
+        import json, sys
+        raise SystemExit(0 if json.load(open(sys.argv[1]))["changed_sources"] else 1)
+        PY
+        then
+          # Every patch-owned edit must make the APK target dirty.  Refuse to
+          # publish a cached APK if timestamp restoration hid a real change.
+          set +e
+          env INVOKED_BY_BUILD_SERVER=1 /usr/bin/ninja \
+            -C work/titanium/chromium/src/out/Default -n chrome_public_apk \
+            > output/ninja-plan.log 2>&1
+          plan_status=$?
+          set -e
+          cat output/ninja-plan.log
+          if [[ "$plan_status" -ne 0 ]]; then
+            exit "$plan_status"
+          fi
+          if grep -q 'ninja: no work to do' output/ninja-plan.log; then
+            echo 'Changed Kiwi sources were not detected by Ninja; refusing stale APK.' >&2
+            exit 1
+          fi
+          date +%s%N > output/incremental-build-start-ns
+        fi
         # Fail on Java/Lint errors before spending hours on native compilation.
         if [[ -f work/titanium/chromium/src/out/Default/.ninja_log ]]; then
           set +e

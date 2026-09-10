@@ -1,0 +1,19 @@
+{
+  "cache_key": "kiwi-incremental-96e928eb318caecadebc48e07400e79aa4063ef9-stage-1",
+  "files": {
+    "chrome/android/chrome_java_resources.gni": "eba5c9d89a76df6be52fbd50a6106af35b94556d0d7b1861070e2762dfe4cb1a",
+    "chrome/android/java/res/values-ja/kiwi_ui.xml": "66c2785bc1b0cb8143a74354b8740e72f5deac22bda8f3f8341581de33dd5f14",
+    "chrome/android/java/res/values/kiwi_ui.xml": "584e17ca31623b8e7d129f805ff372e350996fd01d4dfda5a6dfa0acae1105d9",
+    "chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java": "c07667c380fd45f81500e77c33e2ce31796333961ddd57f63ae69692a7a0d075",
+    "chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java": "934c0d4cc5ca0e6e092cafc042b8358f941a527305681a0b844f00aeef4fe7f6",
+    "chrome/browser/chrome_browser_field_trials.cc": "3dbc8c7273b7e90afd97e59d78b6b9185d8631e523f607ca988434dc43a5946c",
+    "chrome/browser/flags/android/java/src/org/chromium/chrome/browser/flags/ChromeFeatureList.java": "ab7463bf4ffc8441c830906da8436435d2044cf6955b2b59374323f14e7e2686",
+    "chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java": "afd97ca85a246910613cf019239ae6bcef3d6429968a58ba496c4d7232ea5867",
+    "chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinator.java": "618ce916ec339de28d74dda7d248f9d85038c8ce847cba65e554b82fa8348e19",
+    "chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java": "f3d2c2dc9e1e6405935b0451e1bab4a9acaed999ad16a919a6e3b552b90ca37a",
+    "components/browser_ui/styles/android/java/res/values/styles.xml": "b4acafcde513d4a12f6151df422e0ab4989cf0824862579f1e73d166f6ecd4e7",
+    "base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java": "b07be3e4e0395fec2e4755199aed5fd9523e81b50e39dafc6dc8396ddd7a4c7b",
+    "chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java": "b7e4c1aa25e1715c39ac9fb197627f7fbd4f62dca309abe242ab5fd09b95d530",
+    "base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java": "bec8e43d685db44ca81c0220eb206416212a3643895e01c5b4a70a83e47ac9ed"
+  }
+}

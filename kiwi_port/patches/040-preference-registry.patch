@@ -1,0 +1,83 @@
+diff --git a/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java b/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
+index a95ba4d704447a0f242d39d751de0a07419cebc2..ed2b07edaf74c9f1ab4e11a8a2b30535539f9a50 100644
+--- a/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
++++ b/base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java
+@@ -63,10 +63,6 @@ class StrictPreferenceKeyChecker implements PreferenceKeyChecker {
+      * @return Whether |key| is in use.
+      */
+     private boolean isKeyInUse(String key) {
+-        if (SharedPrefsUtils.isKeyInUse(key)) {
+-            return true;
+-        }
+-
+         // For non-dynamic legacy keys, a simple map check is enough.
+         if (mRegistry.mLegacyFormatKeys.contains(key)) {
+             return true;
+diff --git a/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java b/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
+index 76809074a6cb56ef5da64d8114e6d4555990ce40..dfe8d590182d90edd40f60ad0ed0e170a054a350 100644
+--- a/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
++++ b/chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java
+@@ -8,6 +8,7 @@ import androidx.annotation.VisibleForTesting;
+ 
+ import org.chromium.base.shared_preferences.KnownPreferenceKeyRegistries;
+ import org.chromium.base.shared_preferences.PreferenceKeyRegistry;
++import org.chromium.base.shared_preferences.SharedPrefsUtils;
+ import org.chromium.build.annotations.CheckDiscard;
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.components.cached_flags.CachedFlagsSharedPreferences;
+@@ -21,6 +22,7 @@ public class AllPreferenceKeyRegistries {
+     static final Set<PreferenceKeyRegistry> KNOWN_REGISTRIES =
+             Set.of(
+                     ChromeSharedPreferences.REGISTRY,
++                    SharedPrefsUtils.REGISTRY,
+                     CachedFlagsSharedPreferences.REGISTRY,
+                     MultiInstanceSharedPreferences.REGISTRY);
+ 
+diff --git a/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java b/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
+index e9f9abe73111dd169d6fb576c3fea841480aaf5b..ac33c4e809e5d17385399eed5f45ccad2f295407 100644
+--- a/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
++++ b/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java
+@@ -1,8 +1,9 @@
+ package org.chromium.base.shared_preferences;
+ 
+-import org.chromium.build.annotations.CheckDiscard;
++import org.chromium.build.BuildConfig;
++import org.chromium.build.annotations.Nullable;
+ 
+-import java.util.Arrays;
++import java.util.List;
+ 
+ /**
+  * Wrapper utility class for both (Base)ChromePreferenceKeys and SharedPreferencesManager,
+@@ -125,17 +126,20 @@ public final class SharedPrefsUtils {
+                 new BoolSharedPref("open_links_in_incognito", false);
+     }
+ 
+-    static SharedPreferencesManager getSharedPrefManager() {
+-        return SharedPreferencesManager.getInstanceForRegistry(null);
+-    }
++    // Keep the existing on-disk names as explicitly registered legacy keys.
++    // The registry is absent only in builds where Chromium removes key checking.
++    public static final @Nullable PreferenceKeyRegistry REGISTRY =
++            BuildConfig.ENABLE_ASSERTS
++                    ? new PreferenceKeyRegistry(
++                            "titanium",
++                            List.of(),
++                            List.of(
++                                    SharedPrefsExt.CLOSE_TABS_ON_EXIT.getKey(),
++                                    SharedPrefsExt.OPEN_LINKS_IN_INCOGNITO.getKey()),
++                            List.of())
++                    : null;
+ 
+-    @CheckDiscard("Validation is performed in tests and in debug builds.")
+-    static boolean isKeyInUse(String key) {
+-        // clang-format off
+-        return Arrays.asList(
+-            SharedPrefsExt.CLOSE_TABS_ON_EXIT.getKey(),
+-            SharedPrefsExt.OPEN_LINKS_IN_INCOGNITO.getKey()
+-        ).contains(key);
+-        // clang-format on
++    static SharedPreferencesManager getSharedPrefManager() {
++        return SharedPreferencesManager.getInstanceForRegistry(REGISTRY);
+     }
+ }

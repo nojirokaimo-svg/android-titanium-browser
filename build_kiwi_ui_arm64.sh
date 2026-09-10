@@ -205,7 +205,10 @@ if [[ "$BUILD_STATUS" -ne 0 ]]; then
   exit 0
 fi
 
-APK="$(find out/Default/apks -type f -name 'Chrome*.apk' 2>/dev/null | sort | head -n 1 || true)"
+APK="out/Default/apks/ChromePublic.apk"
+if [[ ! -f "$APK" ]]; then
+  APK=""
+fi
 if [[ -z "$APK" ]]; then
   if [[ "$BUILD_STATUS" -eq 124 || "$BUILD_STATUS" -eq 130 || "$BUILD_STATUS" -eq 137 ]]; then
     echo "Build budget reached; out/Default is ready for the next checkpoint stage."
@@ -216,6 +219,19 @@ if [[ -z "$APK" ]]; then
     exit 1
   fi
   exit "$BUILD_STATUS"
+fi
+if [[ -f "$KIT_ROOT/output/incremental-build-start-ns" ]]; then
+  BUILD_START_NS="$(<"$KIT_ROOT/output/incremental-build-start-ns")"
+  APK_MTIME_NS="$(python3 - "$APK" <<'PY'
+import os
+import sys
+print(os.stat(sys.argv[1]).st_mtime_ns)
+PY
+)"
+  if (( APK_MTIME_NS < BUILD_START_NS )); then
+    echo "Ninja succeeded but ChromePublic.apk predates this incremental build; refusing stale APK." >&2
+    exit 1
+  fi
 fi
 mkdir -p "$KIT_ROOT/output"
 cp "$APK" "$KIT_ROOT/output/Titanium-Kiwi-core-$VERSION-arm64-v8a.apk"
