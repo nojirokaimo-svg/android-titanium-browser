@@ -1,0 +1,55 @@
+name: Install verified normalized 050 v2
+
+on:
+  push:
+    branches:
+      - codex/kiwi-ui-preflight-fix
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Install verified 050 without treating diff context as source whitespace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TARGET=codex/kiwi-ui-050-normalize
+          EXPECTED=401625e729d6dde89cdceea0e6cf1dbe9c63e64e
+          cp kiwi_port/regenerate_patches.py "$RUNNER_TEMP/regenerate_patches.py"
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path('.github/workflows/install-normalized-050.yml').read_text()
+          marker = '          python3 - "$GITHUB_WORKSPACE" "$RUNNER_TEMP/regenerate_patches.py" <<\'PY\'\n'
+          start = src.index(marker) + len(marker)
+          end = src.index('          PY\n', start)
+          body = src[start:end]
+          body = ''.join(line[10:] if line.startswith('          ') else line for line in body.splitlines(True))
+          Path('/tmp/install050.py').write_text(body)
+          PY
+          git fetch origin "$TARGET"
+          git checkout -B "$TARGET" "origin/$TARGET"
+          test "$(git rev-parse HEAD)" = "$EXPECTED" || {
+            echo "Target moved; refusing to overwrite: $(git rev-parse HEAD)" >&2
+            exit 1
+          }
+          python3 /tmp/install050.py "$GITHUB_WORKSPACE" "$RUNNER_TEMP/regenerate_patches.py"
+          python3 -m py_compile kiwi_port/regenerate_patches.py kiwi_port/apply.py kiwi_port/test_night_mode_patch.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('kiwi_port/patches/050-night-mode-presets.patch').read_text().splitlines()
+          for number, line in enumerate(p, 1):
+              if line.startswith('+') and not line.startswith('+++') and line[1:] != line[1:].rstrip():
+                  raise SystemExit(f'actual added source line has trailing whitespace at patch line {number}')
+          PY
+          git diff --check -- . ':(exclude)kiwi_port/patches/*.patch'
+          git config user.name 'Titanium-Kiwi repair'
+          git config user.email 'build@example.invalid'
+          git add kiwi_port/patches/050-night-mode-presets.patch kiwi_port/patches/series.json kiwi_port/manifest.json kiwi_port/regenerate_patches.py
+          git commit -m 'Rebuild Night mode patch from exact Chromium 152 base'
+          git push origin "HEAD:$TARGET"
