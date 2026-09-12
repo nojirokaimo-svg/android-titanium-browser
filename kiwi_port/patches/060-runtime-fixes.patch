@@ -1,0 +1,31 @@
+diff --git a/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java b/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java
+--- a/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java
++++ b/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java
+@@ -16,7 +16,6 @@ import org.chromium.components.content_settings.ContentSettingsType;
+ import org.chromium.components.ukm.UkmRecorder;
+ import org.chromium.content_public.browser.BrowserContextHandle;
+ import org.chromium.content_public.browser.WebContents;
+-import org.chromium.ui.util.ColorUtils;
+ import org.chromium.url.GURL;
+ 
+ /**
+@@ -75,8 +74,7 @@ public class WebContentsDarkModeController {
+ 
+         public boolean isFeatureEnabled(
+                 Context context, BrowserContextHandle browserContextHandle) {
+-            return isGlobalUserSettingsEnabled(browserContextHandle)
+-                    && ColorUtils.inNightMode(context);
++            return isGlobalUserSettingsEnabled(browserContextHandle);
+         }
+ 
+         public void recordAutoDarkUkm(WebContents webContents, boolean enabled) {
+@@ -89,9 +87,6 @@ public class WebContentsDarkModeController {
+             if (!isGlobalUserSettingsEnabled(browserContextHandle)) {
+                 return false;
+             }
+-            if (!ColorUtils.inNightMode(context)) {
+-                return false;
+-            }
+             if (!url.isEmpty() && !isEnabledForUrl(browserContextHandle, url)) {
+                 return false;
+             }
