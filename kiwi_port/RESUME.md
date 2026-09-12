@@ -1,7 +1,8 @@
 # Current implementation checkpoint
 
-The existing Night mode feature patch is a work in progress, not a validated
-six-mode implementation. Do not dispatch a full build from this checkpoint.
+The existing Night mode feature patch is a work in progress, not yet a validated
+six-mode implementation. An incremental validation build is now authorized from
+this checkpoint; never clean or fall back to an older/empty cache.
 
 Completed in this continuation:
 
@@ -13,33 +14,28 @@ Completed in this continuation:
 - Disabled AndroidX persistence in XML so preference inflation cannot write
   an unregistered setting. Restart now requires successful synchronous storage.
 - Preset selection no longer silently enables global website darkening.
+- Pinned Chromium 152 APIs used by the restart and contrast paths were checked
+  before starting the incremental validation build.
 
-Remaining before build:
+Validation/build work in progress:
 
-- Fractional image grayscale is now implemented with SkColorMatrix saturation
-  and cc::ColorFilter::MakeMatrix, following the old Kiwi image-filter path.
-  Renderer execution tests are still required. No-settings defaults retain the
-  Chromium LAB pivot of 110 and original image filter.
-- High contrast is now connected to foreground/list-symbol PaintFlags using
-  Chromium BlendForMinContrast, preserving author alpha. Three renderer C++
-  regression tests were added to the existing dark_mode_filter_test.cc target.
-  These tests have NOT been compiled/run; renderer validation remains required.
-- The lifetime Java dependency was verified against pinned Chromium and fixed
-  to //chrome/browser/lifetime/android:java. Presets save synchronously and expose
-  an explicit restart action when the saved renderer switch differs from the
-  running process. Invalid values/storage failure do not restart. Device UX and
-  Java type checking remain unvalidated.
-- Replace string-presence tests with executed renderer/persistence tests.
-- Finish settings, toolbar, tab work and whole-series upstream conflict tests.
-  Three disposable-git tests now pass for reapply idempotence, atomic strict
-  rejection, and independent-feature application with named conflict reports.
-  These are framework tests, not full Chromium upstream reapplication proof.
-- Workflow now explicitly defaults to completed cache
+- Fractional image grayscale is implemented with SkColorMatrix saturation and
+  cc::ColorFilter::MakeMatrix, following the old Kiwi image-filter path. The
+  incremental build must compile the renderer path before this is considered valid.
+- High contrast is connected to foreground/list-symbol PaintFlags using Chromium
+  BlendForMinContrast, preserving author alpha. Three renderer C++ regression
+  tests were added; they remain unvalidated until the Chromium target compiles/runs.
+- The lifetime Java dependency is //chrome/browser/lifetime/android:java. Presets
+  save synchronously and expose an explicit restart action when the saved renderer
+  switch differs from the running process. Invalid values/storage failure do not
+  restart. Java type/lint validation is delegated to the incremental build gate.
+- After compile errors are resolved, continue executed renderer/persistence tests,
+  then settings/toolbar/tab work and whole-series upstream conflict tests. Do not
+  redo completed work or substitute old tab modes with aliases to GRID.
+- Workflow explicitly restores only completed cache
   `kiwi-incremental-96e928eb318caecadebc48e07400e79aa4063ef9-stage-1`
-  and requires restore. Confirm availability before compilation; never silently
-  fall back to an older or empty cache.
+  and requires restore. A cache miss must stop before compilation.
 
-The local workspace has no out/Default. No remote cache mutation was performed.
-The connector rejected cache-list GET; current cache availability is unverified.
-The latest Actions run observed was successful run 34457042932, for the earlier
-APK that the user reports crashes on startup, not these unbuilt changes.
+The local workspace has no out/Default. No clean operation is permitted. The
+incremental GitHub Actions run triggered by this checkpoint is the source of truth
+for Java/lint/native compile errors before further implementation changes.
