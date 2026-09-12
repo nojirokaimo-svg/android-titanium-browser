@@ -64,9 +64,10 @@
         "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc",
         "third_party/blink/renderer/platform/graphics/dark_mode_settings.h",
         "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc",
-        "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"
+        "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h",
+        "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc"
       ],
-      "sha256": "4a60889f5daf70c8a85e2575647437b8e14206a48362d9485ab48a70cec481fb"
+      "sha256": "f2a39028eae57004b4a2ca499980dba6997380ad41b4a166ca9bedc7fd35207d"
     }
   ]
 }

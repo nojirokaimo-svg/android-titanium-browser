@@ -72,31 +72,31 @@
     },
     "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml": {
       "before_sha256": null,
-      "after_sha256": "8f1a2a8bf08918ae27a39d7512080307496eb1f034600b57f20426c7bb5c8b0c"
+      "after_sha256": "85527f3aba0a1798fe9d38fd8ea115e4cab10f0bc9479c3218e26b5c16acfb49"
     },
     "chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml": {
       "before_sha256": null,
-      "after_sha256": "e471597c4999b143cdd040a66f8a43fe4e841ba248ebfd82df2581703a5ba90d"
+      "after_sha256": "1e4040029058aa0c768927a77e7a8f49ebb9e664e63f10b28bdff9a2bdbe8250"
     },
     "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml": {
       "before_sha256": "406ef64e4ac6a65519392ddc0720ed73a3e4f6ffddd7c158689dac6a110d990f",
-      "after_sha256": "a2446c5cae57e82d993149eb0e42e420addcc77b9092900ec2f916abb73a49a8"
+      "after_sha256": "4f029e98354d465116b5515dbdd5fa75f1a2fb64e15080c5699af0909fdfe874"
     },
     "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java": {
       "before_sha256": "646a948195fa0f7dd9836bd0f0266f8c0497a353572d12fddbf6fbb2fc642ded",
-      "after_sha256": "fc6a6aee3731a5f64a8e66f81dcb319385eed14fb36743e0eb4c347a06ad4206"
+      "after_sha256": "273f69915ae3fac8fd326ebbe0c89dc93e4adf3f9f45464eaed0da2cd8f4d912"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc": {
       "before_sha256": "ecc0e3f40f7b96aeb16554d368d0f0128d455d05dd7a12461d8292487bbd6422",
-      "after_sha256": "a011b0d428b9a89fac914d4506e8cdcb61adceb9f8ad882274d6a6eb38bca861"
+      "after_sha256": "005a39ea20cf51bfaeae4434d54372c4520e9d7197f13b8968dfd005a1f21ae5"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h": {
       "before_sha256": "59d6cbc7064a7b23aca8d243aa2637c49916c14bb0d955c052f8b829c72a8400",
-      "after_sha256": "e9ba67566882cb68e6214670a4e80328e3a31abf494e86fcec73ef9b6142652e"
+      "after_sha256": "99d4f3560f5d6037a9ec1a2aecc362aa4cb2a98431a6bdcfb9cf8b4eb7acc23d"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc": {
       "before_sha256": "b88082ae716ca4b6955d67fe3894f1c425335a74688852e6ed88c4ac739e6031",
-      "after_sha256": "d687efc190fb5b38bd0da4f47c928c2cc20ff02c7a7ea37a86f7e18eeb85cb8b"
+      "after_sha256": "d0ac9b3f23c862231ab288e74380db423c3bb80ebfe0b4bdfd12bbb395e634c3"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings.h": {
       "before_sha256": "500989a196f933603e44e22b9910b80d75626b3960dbc76044eab706d80c76aa",
@@ -109,6 +109,10 @@
     "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h": {
       "before_sha256": "217229378c7bb83b6de507fa20fc355374e622607c43e2e66e49be1671d08f33",
       "after_sha256": "383112119bee8415df6c0394c25e76d0ce62d13cbf50b33152aa3253fb65a3a5"
+    },
+    "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc": {
+      "before_sha256": "c53ac2156e7f44e1cbde51a59fd8f9ae5cbff07d2264ebc074db23a42233f3f2",
+      "after_sha256": "898ca09e6f246596531b8fac7606396454ec59db0cda63f55291b50559df9567"
     }
   }
 }
