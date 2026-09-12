@@ -80,6 +80,15 @@ def force_release_args(out):
     return changed
 
 
+def patch_owned_files():
+    series = json.loads((HERE / 'patches/series.json').read_text(encoding='utf-8'))
+    return {
+        name
+        for feature in series['features']
+        for name in feature.get('files', [])
+    }
+
+
 def restore(source, cache_key, manifest, legacy, identity):
     out = source / 'out/Default'
     state_path = out / STATE
@@ -92,7 +101,7 @@ def restore(source, cache_key, manifest, legacy, identity):
         if cache_key != legacy['cache_key']:
             raise RuntimeError('No source provenance for this cache; preserving cache and stopping')
         previous = {p: {'sha256': h, 'mtime_ns': AGE_NS} for p, h in legacy['files'].items()}
-    names = sorted(set(manifest['files']) | set(previous))
+    names = sorted(set(manifest['files']) | set(previous) | patch_owned_files())
     paths = {name: checked_path(source, name) for name in names}
     current = {name: digest(p) for name, p in paths.items()}
     # Age only source files. Prune every out/.git directory, including nested
