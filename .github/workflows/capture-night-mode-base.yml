@@ -11,29 +11,59 @@ permissions:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
 
-      - name: Stop builder immediately before Kiwi patch application
+      - name: Reconstruct exact pinned pre-Kiwi Night mode base
+        shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
+          set -Eeuo pipefail
+          TITANIUM_COMMIT=80ffcdf1cebe51cddc593f571a6f26c3374aea2e
+          VANADIUM_COMMIT=150a27e23302cc265baf8a7fb7c0f0112bddf2fd
+          CHROMIUM_COMMIT=506c834ecceaa943c5f41e6cfe7f68acb5c45346
+          VERSION=152.0.7977.64
+          T="$GITHUB_WORKSPACE/work/titanium"
+          S="$T/chromium/src"
 
-          p = Path("build_kiwi_ui_arm64.sh")
-          s = p.read_text(encoding="utf-8")
-          needle = 'python3 "$KIT_ROOT/kiwi_port/apply.py" "$PWD" "${PATCH_ARGS[@]}"'
-          if s.count(needle) != 1:
-              raise SystemExit("capture injection point changed")
-          replacement = r'''python3 - "$KIT_ROOT" "$PWD" <<'PY_CAPTURE'
+          git clone --filter=blob:none --no-checkout https://github.com/jqssun/android-titanium-browser.git "$T"
+          git -C "$T" fetch --depth 1 origin "$TITANIUM_COMMIT"
+          git -C "$T" checkout --detach "$TITANIUM_COMMIT"
+          git -C "$T" submodule update --init --depth 1 vanadium
+          test "$(git -C "$T/vanadium" rev-parse HEAD)" = "$VANADIUM_COMMIT"
+
+          # These 13 files are not modified by pinned Titanium patch.sh. Refuse
+          # this shortcut if that invariant ever changes.
+          if grep -Eq 'ProcessInitializationHandler|night_mode|dark_mode_(color_filter|filter|settings)' "$T/patch.sh"; then
+            echo 'Pinned Titanium patch.sh now touches a Night mode target; full reconstruction required.' >&2
+            exit 1
+          fi
+
+          mkdir -p "$S"
+          cd "$S"
+          git init
+          git remote add origin https://chromium.googlesource.com/chromium/src.git
+          git fetch --depth 1 origin "+refs/tags/$VERSION:refs/tags/$VERSION"
+          git checkout --detach --force "refs/tags/$VERSION"
+          test "$(git rev-parse HEAD)" = "$CHROMIUM_COMMIT"
+
+          rm -f "$T"/vanadium/patches/*trichrome-{apk-build-targets,browser-apk-targets}.patch
+          rm -f "$T"/vanadium/patches/*{detailed,supported}-language*.patch
+          rm -f "$T"/vanadium/patches/*javascript-optimizer-{site-setting,settings-UI}.patch
+          rm -f "$T"/vanadium/patches/*component-updates.patch
+          rm -f "$T"/vanadium/patches/*{pdf,PDF,for-content-public,toolbar-button,configs-from-config-app,new-tab-card,predictive-back*}*.patch
+          find "$T/vanadium/patches" -type f -exec sed -i 's@VANADIUM@TITANIUM@g;s@Vanadium@Titanium@g;s@vanadium@titanium@g' {} +
+          git -c user.name='Titanium-Kiwi build' -c user.email='build@example.invalid' \
+            am --whitespace=nowarn --keep-non-patch "$T"/vanadium/patches/*.patch
+
+          python3 - "$S" "$GITHUB_WORKSPACE/output/post-titanium-night-mode-base" <<'PY'
           import hashlib
           import shutil
           import sys
           from pathlib import Path
 
-          kit_root = Path(sys.argv[1])
-          src = Path(sys.argv[2])
-          out = kit_root / "output" / "post-titanium-night-mode-base"
+          src = Path(sys.argv[1])
+          out = Path(sys.argv[2])
           paths = [
               "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java",
               "chrome/browser/ui/android/night_mode/BUILD.gn",
@@ -49,7 +79,7 @@ jobs:
               "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h",
               "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc",
           ]
-          lines = []
+          sums = []
           for rel in paths:
               source = src / rel
               if source.exists():
@@ -57,24 +87,13 @@ jobs:
                   target = out / rel
                   target.parent.mkdir(parents=True, exist_ok=True)
                   shutil.copy2(source, target)
-                  digest = hashlib.sha256(data).hexdigest()
-                  lines.append(f"{digest}  {rel}")
+                  sums.append(f"{hashlib.sha256(data).hexdigest()}  {rel}")
               else:
-                  lines.append(f"MISSING  {rel}")
+                  sums.append(f"MISSING  {rel}")
           out.mkdir(parents=True, exist_ok=True)
-          (out / "SHA256SUMS.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-          print("Captured exact post-Titanium Night mode base:")
-          print("\n".join(lines))
-          PY_CAPTURE
-          exit 0'''
-          p.write_text(s.replace(needle, replacement), encoding="utf-8")
+          (out / "SHA256SUMS.txt").write_text("\n".join(sums) + "\n", encoding="utf-8")
+          print("\n".join(sums))
           PY
-
-      - name: Prepare exact pinned Chromium + Vanadium + Titanium base
-        env:
-          KIWI_BUILD_PHASE: prepare
-          KIWI_PATCH_MODE: strict
-        run: ./build_kiwi_ui_arm64.sh
 
       - name: Upload exact base
         uses: actions/upload-artifact@v4
