@@ -76,7 +76,7 @@
       "files": [
         "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java"
       ],
-      "sha256": "5cf192d45d399621ab1c28508f46072e9831e2ee784c9e9d75ad6bc6f9c8dab2"
+      "sha256": "89f292ffbe575da4408dffcce4f35ceacb286dae5c2224ee87a8b85d420c4073"
     },
     {
       "id": "renderer-force-dark-runtime",
@@ -86,6 +86,17 @@
         "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsThemeClient.java"
       ],
       "sha256": "1d974eea1da24b4e66f5cd1153d94abb75535b462fdee0e086225be43cafe2ab"
+    },
+    {
+      "id": "extension-mobile-ui",
+      "name": "Fit chrome extensions management UI to phone widths",
+      "patch": "080-extension-mobile-ui.patch",
+      "files": [
+        "chrome/browser/resources/extensions/item_list.css",
+        "chrome/browser/resources/extensions/shared_style.css",
+        "chrome/browser/resources/extensions/manager.css"
+      ],
+      "sha256": "2f319818ef2a4ee3f2c94210f5fc8b11555ae8c556e68073b3930311f39b6e0c"
     }
   ]
 }
