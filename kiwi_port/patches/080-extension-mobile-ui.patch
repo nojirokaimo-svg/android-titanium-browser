@@ -1,0 +1,69 @@
+diff --git a/chrome/browser/resources/extensions/item_list.css b/chrome/browser/resources/extensions/item_list.css
+--- a/chrome/browser/resources/extensions/item_list.css
++++ b/chrome/browser/resources/extensions/item_list.css
+@@ -120,3 +120,27 @@
+    * is clickable. */
+   z-index: 1;
+ }
++
++@media (max-width: 600px) {
++  .items-container,
++  #content-wrapper {
++    --extensions-card-width: calc(100vw - 24px);
++  }
++
++  #content-wrapper {
++    box-sizing: border-box;
++    min-width: 0;
++    padding: 12px 12px 48px;
++    width: 100%;
++  }
++
++  .items-container {
++    grid-template-columns: minmax(0, 1fr);
++    max-width: 100%;
++    width: 100%;
++  }
++
++  .items-container.panel :first-child {
++    max-width: 100%;
++  }
++}
++diff --git a/chrome/browser/resources/extensions/shared_style.css b/chrome/browser/resources/extensions/shared_style.css
++--- a/chrome/browser/resources/extensions/shared_style.css
+++++ b/chrome/browser/resources/extensions/shared_style.css
++@@ -173,3 +173,11 @@
++     padding-inline-start: 0;
++   }
++ }
+++
+++@media (max-width: 600px) {
+++  .page-content {
+++    max-width: 100vw;
+++    padding-bottom: 32px;
+++    width: 100%;
+++  }
+++}
++diff --git a/chrome/browser/resources/extensions/manager.css b/chrome/browser/resources/extensions/manager.css
++--- a/chrome/browser/resources/extensions/manager.css
+++++ b/chrome/browser/resources/extensions/manager.css
++@@ -87,3 +87,19 @@
++   width: 100%;
++ }
++ 
+++@media (max-width: 600px) {
+++  #viewManager,
+++  #viewManager:has(extensions-item-list.active) {
+++    flex-basis: 100%;
+++    min-width: 0;
+++  }
+++
+++  #container {
+++    width: 100%;
+++  }
+++
+++  #left,
+++  #right {
+++    display: none;
+++  }
+++}
