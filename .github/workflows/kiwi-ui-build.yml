@@ -12,7 +12,7 @@ on:
       - codex/kiwi-ui-port
 
 permissions:
-  contents: write
+  contents: read
   actions: write
 
 concurrency:
@@ -27,78 +27,6 @@ jobs:
       done: ${{ steps.build.outputs.done }}
     steps:
       - uses: actions/checkout@v5
-      - name: One-time Chromium 152 Night mode API correction
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import hashlib
-          import json
-
-          patch_path = Path("kiwi_port/patches/050-night-mode-presets.patch")
-          patch = patch_path.read_text(encoding="utf-8")
-          old_sha = hashlib.sha256(patch.encode()).hexdigest()
-          expected_old = "f2a39028eae57004b4a2ca499980dba6997380ad41b4a166ca9bedc7fd35207d"
-          if old_sha != expected_old:
-              raise SystemExit(f"unexpected Night mode patch SHA: {old_sha}")
-
-          replacements = [
-              (
-                  "+    image_filter = cc::ColorFilter::MakeMatrix(matrix.getRowMajor());",
-                  "+    float row_major[20];\n+    matrix.getRowMajor(row_major);\n+    image_filter = cc::ColorFilter::MakeMatrix(row_major);",
-              ),
-              (
-                  "@@ -124,9 +126,17 @@ DarkModeFilter::ImmutableData::ImmutableData(const DarkModeSettings& settings)",
-                  "@@ -124,9 +126,19 @@ DarkModeFilter::ImmutableData::ImmutableData(const DarkModeSettings& settings)",
-              ),
-              (
-                  "@@ -149,6 +159,9 @@ SkColor4f DarkModeFilter::AdjustDarkenColor(",
-                  "@@ -149,6 +161,9 @@ SkColor4f DarkModeFilter::AdjustDarkenColor(",
-              ),
-              (
-                  "@@ -294,4 +307,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {",
-                  "@@ -294,4 +309,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {",
-              ),
-              (
-                  "index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..4a4c60f9c9483730249e3a7208cf7a478173b4fb 100644",
-                  "index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..cc0e6000b9ea41cd7e724fccf65442ca7b2bf9dd 100644",
-              ),
-          ]
-          for old, new in replacements:
-              if patch.count(old) != 1:
-                  raise SystemExit(f"Night mode patch correction target count != 1: {old}")
-              patch = patch.replace(old, new)
-
-          new_patch_sha = hashlib.sha256(patch.encode()).hexdigest()
-          expected_new = "c149c392129fdf2cdc55b143106f8c2725301561ccc8f125d403dc7e99219aad"
-          if new_patch_sha != expected_new:
-              raise SystemExit(f"corrected Night mode patch SHA mismatch: {new_patch_sha}")
-          patch_path.write_text(patch, encoding="utf-8")
-
-          series_path = Path("kiwi_port/patches/series.json")
-          series = json.loads(series_path.read_text(encoding="utf-8"))
-          feature = next(item for item in series["features"] if item["id"] == "night-mode-presets")
-          feature["sha256"] = new_patch_sha
-          series_path.write_text(json.dumps(series, indent=2) + "\n", encoding="utf-8")
-
-          manifest_path = Path("kiwi_port/manifest.json")
-          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-          manifest["files"]["third_party/blink/renderer/platform/graphics/dark_mode_filter.cc"]["after_sha256"] = "bfee0222371975b47a8c88adc549bd8a44ef6bdf08c3b619224d3b4e04e8f0bd"
-          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-
-          resume_path = Path("kiwi_port/RESUME.md")
-          resume = resume_path.read_text(encoding="utf-8")
-          note = "- Chromium 152 SkColorMatrix API was corrected to use an explicit 20-float row-major buffer; patch/manifest/series hashes were updated together.\n"
-          if note not in resume:
-              resume += "\n" + note
-              resume_path.write_text(resume, encoding="utf-8")
-          PY
-          git config user.name "Titanium-Kiwi validation"
-          git config user.email "build@example.invalid"
-          git add kiwi_port/patches/050-night-mode-presets.patch kiwi_port/patches/series.json kiwi_port/manifest.json kiwi_port/RESUME.md
-          git commit -m "Fix Chromium 152 SkColorMatrix Night mode API [skip ci]"
-          git push origin HEAD:codex/kiwi-ui-port
-          echo "One-time correction committed. Stop this run before any compilation."
-          exit 1
       - id: build
         uses: ./.github/actions/kiwi-build-stage
         with:
