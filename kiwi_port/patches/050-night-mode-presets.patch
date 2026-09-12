@@ -27,14 +27,14 @@ index 476240086620657c371f7dd189347ff1ff233355..83fe50daed630422240ad375c5959568
  }
 -
 diff --git a/chrome/browser/ui/android/night_mode/BUILD.gn b/chrome/browser/ui/android/night_mode/BUILD.gn
-index 4e73df67e7c7c2e5c31ca9dad630656776a24f84..3a6224608d9f7efb612b2a9ec1918a3c8b1debc8 100644
+index 4e73df67e7c7c2e5c31ca9dad630656776a24f84..3ad8273330e3f6822adf37dd91b119876cf33dcf 100644
 --- a/chrome/browser/ui/android/night_mode/BUILD.gn
 +++ b/chrome/browser/ui/android/night_mode/BUILD.gn
 @@ -32,6 +32,7 @@ android_library("java") {
      "//chrome/browser/feedback/android:factory_java",
      "//chrome/browser/feedback/android:java",
      "//chrome/browser/flags:java",
-+    "//chrome/browser/lifetime:java",
++    "//chrome/browser/lifetime/android:java",
      "//chrome/browser/preferences:java",
      "//chrome/browser/profiles/android:java",
      "//chrome/browser/settings:java",

@@ -68,7 +68,7 @@
     },
     "chrome/browser/ui/android/night_mode/BUILD.gn": {
       "before_sha256": "a64aba53bc83c4ad8d82e8138f9ac43a324837e585c5f3abc019516709b32c51",
-      "after_sha256": "242c99fe7b7b53ecace800f405704c1889760838949d3e3f13b9ffc59e7fb5d9"
+      "after_sha256": "46c25e9d2dbd16a531d284d97a5aefbbdf3117a5fcc232abbbe46ed76a7585e4"
     },
     "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml": {
       "before_sha256": null,

@@ -66,7 +66,7 @@
         "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc",
         "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"
       ],
-      "sha256": "1daace8eab32bf85368c39e2a02a1a67bf1a861784385227da15fd4f882c72fd"
+      "sha256": "4a60889f5daf70c8a85e2575647437b8e14206a48362d9485ab48a70cec481fb"
     }
   ]
 }

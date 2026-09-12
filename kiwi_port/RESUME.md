@@ -22,7 +22,8 @@ Remaining before build:
   Chromium LAB pivot of 110 and original image filter.
 - Verify high contrast for text roles; current adjustment is reached for
   selections and does not establish the requested text behavior.
-- Validate restart UX and the actual lifetime GN dependency at the pinned source.
+- The lifetime Java dependency was verified against pinned Chromium and fixed
+  to //chrome/browser/lifetime/android:java. Restart UX remains unvalidated.
 - Replace string-presence tests with executed renderer/persistence tests.
 - Finish settings, toolbar, tab work and whole-series upstream conflict tests.
 - Select completed cache
