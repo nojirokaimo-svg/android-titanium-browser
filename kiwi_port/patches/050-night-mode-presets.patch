@@ -1,5 +1,5 @@
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java b/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
-index 476240086620657c371f7dd189347ff1ff233355..83fe50daed630422240ad375c595956890de9372 100644
+index 6efddf6f939ded1d209165e17575667585668f1f..214231b85f72c15885e8f7620611fd5009578531 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
 @@ -31,6 +31,7 @@ import org.chromium.base.TraceEvent;
@@ -21,13 +21,8 @@ index 476240086620657c371f7dd189347ff1ff233355..83fe50daed630422240ad375c5959568
          // Time this call takes in background from test devices:
          // - Pixel 2: ~10 ms
          // - Nokia 1 (Android Go): 20-200 ms
-@@ -984,4 +989,3 @@ public class ProcessInitializationHandler {
-         return EdgeToEdgeStateProvider.isEdgeToEdgeEnabledForWindow(windowAndroid);
-     }
- }
--
 diff --git a/chrome/browser/ui/android/night_mode/BUILD.gn b/chrome/browser/ui/android/night_mode/BUILD.gn
-index 4e73df67e7c7c2e5c31ca9dad630656776a24f84..3ad8273330e3f6822adf37dd91b119876cf33dcf 100644
+index 38e6ff91fdbee80e296c874545316a0739a2616d..3ad8273330e3f6822adf37dd91b119876cf33dcf 100644
 --- a/chrome/browser/ui/android/night_mode/BUILD.gn
 +++ b/chrome/browser/ui/android/night_mode/BUILD.gn
 @@ -32,6 +32,7 @@ android_library("java") {
@@ -47,11 +42,6 @@ index 4e73df67e7c7c2e5c31ca9dad630656776a24f84..3ad8273330e3f6822adf37dd91b11987
      "java/res/xml/theme_preferences.xml",
    ]
  
-@@ -172,4 +175,3 @@ robolectric_library("junit") {
- 
-   resources_package = "org.chromium.chrome.browser.night_mode"
- }
--
 diff --git a/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml b/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
 new file mode 100644
 index 0000000000000000000000000000000000000000..31d50f6d4382e56d2341d0d07ddd7c9a2e98fcc0
@@ -101,7 +91,7 @@ index 0000000000000000000000000000000000000000..5554bf4b36693727a4924d12e4f26017
 +    </string-array>
 +</resources>
 diff --git a/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml b/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
-index 49d96d1ca4acb3f0e40dcaf06e69ddbd4bae26f4..e76c706f1fa63e486cb31d01103384c48bdd4409 100644
+index 8f0ff05bb21cd46d009be17a2cedfe736d7d9365..5940d08e10f5381b6daf4294c3f22c6bb95f1292 100644
 --- a/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
 +++ b/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
 @@ -8,4 +8,17 @@ found in the LICENSE file.
@@ -122,8 +112,9 @@ index 49d96d1ca4acb3f0e40dcaf06e69ddbd4bae26f4..e76c706f1fa63e486cb31d01103384c4
 +        android:title="@string/kiwi_night_mode_restart_title"
 +        android:summary="@string/kiwi_night_mode_restart_summary" />
  </PreferenceScreen>
+\ No newline at end of file
 diff --git a/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java b/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
-index f6833ba4b18b17c451448bc1b1f144fbd176e45d..76d8acc1cf7eefb2987bb0f79762de2b944318ab 100644
+index a8690622a9fc9438ea92f4bc50a6145592ee8c7d..76d8acc1cf7eefb2987bb0f79762de2b944318ab 100644
 --- a/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
 +++ b/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
 @@ -9,13 +9,19 @@ import static org.chromium.chrome.browser.preferences.ChromePreferenceKeys.UI_TH
@@ -194,13 +185,8 @@ index f6833ba4b18b17c451448bc1b1f144fbd176e45d..76d8acc1cf7eefb2987bb0f79762de2b
          // TODO(crbug.com/40198953): Notify feature engagement system that settings were opened.
          // Record entry point metrics if this fragment is freshly created.
          if (savedInstanceState == null) {
-@@ -186,4 +226,3 @@ public class ThemeSettingsFragment extends ChromeBaseSettingsFragment
-                 }
-             };
- }
--
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
-index 4a3e2f1797a8f0a9eeffbe8a97ea60a9e802246b..9a4d1cf9b577a5ac466c7c306964d8574a321e43 100644
+index 273317b2480e070dd75eabcf5428f10034187a39..fd03014b21004c6f33d7d4d5750184600fc26182 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
 @@ -4,12 +4,14 @@
@@ -250,7 +236,7 @@ index 4a3e2f1797a8f0a9eeffbe8a97ea60a9e802246b..9a4d1cf9b577a5ac466c7c306964d857
    sk_sp<cc::ColorFilter> ToColorFilter() const override { return filter_; }
  
 +  SkColor4f AdjustTextContrast(const SkColor4f& color,
-+                             const SkColor4f& background) const override {
++                               const SkColor4f& background) const override {
 +    if (!increase_text_contrast_ || color.fA == 0.0f || background.fA < 1.0f)
 +      return color;
 +    // Use Chromium's contrast solver, which can darken as well as lighten.
@@ -265,7 +251,7 @@ index 4a3e2f1797a8f0a9eeffbe8a97ea60a9e802246b..9a4d1cf9b577a5ac466c7c306964d857
   private:
    // Further darken dark grays to match the primary surface color recommended by
    // the material design guidelines:
-@@ -121,16 +140,18 @@ class LABColorFilter : public DarkModeColorFilter {
+@@ -121,13 +140,16 @@ class LABColorFilter : public DarkModeColorFilter {
    }
  
    const lab::DarkModeSRGBLABTransformer transformer_;
@@ -284,11 +270,8 @@ index 4a3e2f1797a8f0a9eeffbe8a97ea60a9e802246b..9a4d1cf9b577a5ac466c7c306964d857
  }
  
  DarkModeColorFilter::~DarkModeColorFilter() = default;
- 
- }  // namespace blink
--
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
-index 0a74f61d9075c6436f71677095c82d098e6ec60d..042110bbe253fc7f7e0c923c61236d1b2420b73c 100644
+index 193d43304b9820b10ee0a20ac958e0218f6a2570..123e253f5490b5a022c177efe8aedb10fa65a27e 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
 @@ -17,14 +17,21 @@ class ColorFilter;
@@ -308,19 +291,14 @@ index 0a74f61d9075c6436f71677095c82d098e6ec60d..042110bbe253fc7f7e0c923c61236d1b
    virtual SkColor4f InvertColor(const SkColor4f& color) const = 0;
    virtual sk_sp<cc::ColorFilter> ToColorFilter() const = 0;
 +  virtual SkColor4f AdjustTextContrast(const SkColor4f& color,
-+                                     const SkColor4f& background) const {
++                                       const SkColor4f& background) const {
 +    return color;
 +  }
    virtual SkColor4f AdjustColorForHigherConstrast(
        const SkColor4f& adjusted_color,
        const SkColor4f& background,
-@@ -36,4 +43,3 @@ class PLATFORM_EXPORT DarkModeColorFilter {
- }  // namespace blink
- 
- #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_COLOR_FILTER_H_
--
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc b/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
-index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..cc0e6000b9ea41cd7e724fccf65442ca7b2bf9dd 100644
+index 8a219011dc791c3deb8182c92a49e692183e44d1..cc0e6000b9ea41cd7e724fccf65442ca7b2bf9dd 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
 @@ -11,6 +11,7 @@
@@ -370,16 +348,11 @@ index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..cc0e6000b9ea41cd7e724fccf65442ca
      case ElementRole::kBorder: {
        if (color == SkColor4f{0.0f, 0.0f, 0.0f, color.fA})
          return color;
-@@ -294,4 +309,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {
- }
- 
- }  // namespace blink
--
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc b/third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc
-index 603827dd403c5bac8dc0b764d8b3ebfd24fe7fba..2222d0cc8e6da5614bf2154813dfb762e588ad6c 100644
+index ff8762aa9007ecef2f69faaef9a52537b98d0bd8..effc9b70d6a9b0d61cef88cb62baa874d508b0a9 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc
-@@ -9,11 +9,72 @@
+@@ -9,11 +9,77 @@
  #include "cc/paint/paint_flags.h"
  #include "testing/gtest/include/gtest/gtest.h"
  #include "third_party/blink/renderer/platform/graphics/dark_mode_settings.h"
@@ -395,7 +368,12 @@ index 603827dd403c5bac8dc0b764d8b3ebfd24fe7fba..2222d0cc8e6da5614bf2154813dfb762
 +  const auto defaults = BuildDarkModeSettingsForTesting("");
 +  EXPECT_FLOAT_EQ(110.0f, defaults.lab_lightness_pivot);
 +  EXPECT_FLOAT_EQ(0.0f, defaults.image_grayscale_percent);
-+  struct Preset { const char* value; float pivot; float grayscale; bool text; };
++  struct Preset {
++    const char* value;
++    float pivot;
++    float grayscale;
++    bool text;
++  };
 +  const Preset presets[] = {
 +      {"ContrastPercent=0,ImageGrayScalePercent=0.15", 100, .15f, false},
 +      {"ContrastPercent=0,ImageGrayScalePercent=0.15", 100, .15f, false},
@@ -452,16 +430,11 @@ index 603827dd403c5bac8dc0b764d8b3ebfd24fe7fba..2222d0cc8e6da5614bf2154813dfb762
  TEST(DarkModeFilterTest, ApplyDarkModeToColorsAndFlagsWithInvertLightnessLAB) {
    constexpr float kPrecision = 0.00001f;
    DarkModeSettings settings;
-@@ -185,4 +246,3 @@ TEST(DarkModeFilterTest, InvertedColorCacheZeroMaxKeys) {
- 
- }  // namespace
- }  // namespace blink
--
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_settings.h b/third_party/blink/renderer/platform/graphics/dark_mode_settings.h
-index efde6dee28e4c1312ff6dd6ab92fa36ddbe53fb5..07859e9eeb14b6fb30f411414429969691c58a3d 100644
+index 433b7c00c5f196792c04d484d73735a863b7bb3f..07859e9eeb14b6fb30f411414429969691c58a3d 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_settings.h
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_settings.h
-@@ -21,9 +21,16 @@ struct DarkModeSettings {
+@@ -21,6 +21,14 @@ struct DarkModeSettings {
    //
    // Warning: This behavior is the opposite of foreground_brightness_threshold!
    int background_brightness_threshold = 0;
@@ -476,20 +449,19 @@ index efde6dee28e4c1312ff6dd6ab92fa36ddbe53fb5..07859e9eeb14b6fb30f4114144299696
  };
  
  }  // namespace blink
- 
- #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_SETTINGS_H_
--
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
-index 9fe4f9a0d200bf51e7bc0e2fc809faaf8eee0d11..708d3cc294d535784a67b1a4c004d3b1fe3f4da3 100644
+index c634ccc8a275357cdded642880de09cfcfc90276..297c9f16a93b9e1caa9206f622fcfce3abf096ef 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
-@@ -5,13 +5,15 @@
+@@ -4,14 +4,17 @@
+ 
  #include "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"
  
++#include <algorithm>
++#include <cmath>
  #include <string>
 -#include <unordered_map>
 +#include <string_view>
-+#include <cmath>
  
  #include "base/command_line.h"
  #include "base/strings/string_number_conversions.h"
@@ -500,7 +472,7 @@ index 9fe4f9a0d200bf51e7bc0e2fc809faaf8eee0d11..708d3cc294d535784a67b1a4c004d3b1
  #include "third_party/blink/renderer/platform/graphics/dark_mode_settings.h"
  
  namespace blink {
-@@ -27,12 +29,36 @@ T Clamp(T value, T min_value, T max_value) {
+@@ -27,12 +30,36 @@ T Clamp(T value, T min_value, T max_value) {
    return std::max(min_value, std::min(value, max_value));
  }
  
@@ -538,7 +510,7 @@ index 9fe4f9a0d200bf51e7bc0e2fc809faaf8eee0d11..708d3cc294d535784a67b1a4c004d3b1
    return settings;
  }
  
-@@ -40,9 +66,15 @@ DarkModeSettings BuildDarkModeSettings() {
+@@ -40,8 +67,15 @@ DarkModeSettings BuildDarkModeSettings() {
  
  // Always get the dark mode settings using this function.
  const DarkModeSettings& GetCurrentDarkModeSettings() {
@@ -549,13 +521,12 @@ index 9fe4f9a0d200bf51e7bc0e2fc809faaf8eee0d11..708d3cc294d535784a67b1a4c004d3b1
    return settings;
  }
  
--}  // namespace blink
 +DarkModeSettings BuildDarkModeSettingsForTesting(
 +    std::string_view serialized_settings) {
 +  return BuildDarkModeSettings(serialized_settings);
 +}
- 
-+}  // namespace blink
++
+ }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h
 index 90e8aff878ed41e81093ad286f58f6547183636e..396bd3c84084f84d99391ba9f8354968a375d42b 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h

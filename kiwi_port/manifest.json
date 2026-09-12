@@ -63,11 +63,11 @@
       "after_sha256": "d5c4a2f16b3a3a16c875981db76d0223d597908aafc3383bd4b20d472043bf30"
     },
     "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java": {
-      "before_sha256": "6b38062a6e49879c544b921e139433162ea2c7b86369d7dc28de4c29295c4b7f",
-      "after_sha256": "0fa3a4290d49ede474fc291c2784b635877b580046ad593c1b4dbddcb5395f2e"
+      "before_sha256": "0c8ad0b606e9d119743b85e238fe997d09458c951a0504863b2ccac97da4057d",
+      "after_sha256": "c4b7eaa59e16d8259459f35f2d7f197e14b6080ddd0b9fb03380ef2e8598109c"
     },
     "chrome/browser/ui/android/night_mode/BUILD.gn": {
-      "before_sha256": "a64aba53bc83c4ad8d82e8138f9ac43a324837e585c5f3abc019516709b32c51",
+      "before_sha256": "fea7203de919361f05ee363f2a3b82817ef0e26c5f45bff2560f01fbab26e03b",
       "after_sha256": "46c25e9d2dbd16a531d284d97a5aefbbdf3117a5fcc232abbbe46ed76a7585e4"
     },
     "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml": {
@@ -79,40 +79,40 @@
       "after_sha256": "1e4040029058aa0c768927a77e7a8f49ebb9e664e63f10b28bdff9a2bdbe8250"
     },
     "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml": {
-      "before_sha256": "406ef64e4ac6a65519392ddc0720ed73a3e4f6ffddd7c158689dac6a110d990f",
-      "after_sha256": "4f029e98354d465116b5515dbdd5fa75f1a2fb64e15080c5699af0909fdfe874"
+      "before_sha256": "95c3af1a24f5ca3d0f91aaff6afc560ece832a76ea2099395df152e6446c1094",
+      "after_sha256": "8142f3ca862d54025ad4e100ea66d536d79861b842810f7453e6eab03571c11e"
     },
     "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java": {
-      "before_sha256": "646a948195fa0f7dd9836bd0f0266f8c0497a353572d12fddbf6fbb2fc642ded",
+      "before_sha256": "47e8d1336f96f3a11ce566ef022f4587f929809f2c7e2b5a8d2c3a430005e5dc",
       "after_sha256": "273f69915ae3fac8fd326ebbe0c89dc93e4adf3f9f45464eaed0da2cd8f4d912"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc": {
-      "before_sha256": "ecc0e3f40f7b96aeb16554d368d0f0128d455d05dd7a12461d8292487bbd6422",
-      "after_sha256": "005a39ea20cf51bfaeae4434d54372c4520e9d7197f13b8968dfd005a1f21ae5"
+      "before_sha256": "8f16a319ff08e062f781b27c21095361e0711a6f30281be90bb36746394f0ab0",
+      "after_sha256": "47bc9e79ad5b5ac44cfbe29310bab0699bde1b04724928592b088e9d06cee045"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h": {
-      "before_sha256": "59d6cbc7064a7b23aca8d243aa2637c49916c14bb0d955c052f8b829c72a8400",
-      "after_sha256": "99d4f3560f5d6037a9ec1a2aecc362aa4cb2a98431a6bdcfb9cf8b4eb7acc23d"
+      "before_sha256": "178f6beb55420301c18770ddbb8e265082fcba3217e8248bec3c396261e60cb0",
+      "after_sha256": "a6c12432add83145252a207ddd30f8acb7686077f89fa28f2a83d1c8cb00a28a"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc": {
-      "before_sha256": "b88082ae716ca4b6955d67fe3894f1c425335a74688852e6ed88c4ac739e6031",
+      "before_sha256": "49b9bea63fe3f7e41cbe9d92a6536ea522dbb0613dce816b10234472fe827e96",
       "after_sha256": "bfee0222371975b47a8c88adc549bd8a44ef6bdf08c3b619224d3b4e04e8f0bd"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings.h": {
-      "before_sha256": "500989a196f933603e44e22b9910b80d75626b3960dbc76044eab706d80c76aa",
+      "before_sha256": "3bf45c39f890447087fd5549a78a9c8a8acfd039547de3c1674965492f31c6b6",
       "after_sha256": "8ceb8a9ff030a51c4746d081723878a052d9cea3120faeb5ebc7192ce34cacc3"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc": {
-      "before_sha256": "f76e517a30de7e3d953d3e32950f8664c0eb700becd14d7f60ee26befc7b9371",
-      "after_sha256": "d0e784e8f9975da48ca17319566112b1b51f7d2424dfe651fdc7977dfcd61434"
+      "before_sha256": "23f8481a0b10f48f6d412a9fac0f8227a03d2e508fa0161168dde6116041fa66",
+      "after_sha256": "1d601c2fc7cdced06096e43ec850e592efd236494eba43113d5fe92b40ca75cc"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h": {
       "before_sha256": "217229378c7bb83b6de507fa20fc355374e622607c43e2e66e49be1671d08f33",
       "after_sha256": "383112119bee8415df6c0394c25e76d0ce62d13cbf50b33152aa3253fb65a3a5"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc": {
-      "before_sha256": "c53ac2156e7f44e1cbde51a59fd8f9ae5cbff07d2264ebc074db23a42233f3f2",
-      "after_sha256": "898ca09e6f246596531b8fac7606396454ec59db0cda63f55291b50559df9567"
+      "before_sha256": "093682608b2ce4ad1cd23675bc80f424a91d16ae36494eae598b88b9cb997265",
+      "after_sha256": "0f90652a107c87cbcd133439ef50d716f31f7412545d3e6496c946f78fbc0aab"
     }
   }
 }
