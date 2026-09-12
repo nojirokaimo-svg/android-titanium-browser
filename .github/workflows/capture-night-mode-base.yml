@@ -1,4 +1,4 @@
-name: Capture post-Titanium Night mode base
+name: Normalize Night mode patch from exact base
 
 on:
   push:
@@ -6,25 +6,40 @@ on:
       - codex/kiwi-ui-preflight-fix
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  capture:
+  normalize:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
 
-      - name: Reconstruct exact pinned pre-Kiwi Night mode base
+      - name: Rebuild 050 from exact pinned base and push clean fix branch
         shell: bash
         run: |
           set -Eeuo pipefail
+          REPO="$GITHUB_WORKSPACE"
+          TARGET_BRANCH=codex/kiwi-ui-050-normalize
+          EXPECTED_TARGET=401625e729d6dde89cdceea0e6cf1dbe9c63e64e
           TITANIUM_COMMIT=80ffcdf1cebe51cddc593f571a6f26c3374aea2e
           VANADIUM_COMMIT=150a27e23302cc265baf8a7fb7c0f0112bddf2fd
           CHROMIUM_COMMIT=506c834ecceaa943c5f41e6cfe7f68acb5c45346
           VERSION=152.0.7977.64
-          T="$GITHUB_WORKSPACE/work/titanium"
+          T="$RUNNER_TEMP/titanium"
           S="$T/chromium/src"
+
+          # Keep the already-reviewed base-verification safeguard from df8380f.
+          cp "$REPO/kiwi_port/regenerate_patches.py" "$RUNNER_TEMP/regenerate_patches.py"
+
+          git fetch origin "$TARGET_BRANCH"
+          git checkout -B "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET" || {
+            echo "Target branch moved; refusing to overwrite it." >&2
+            exit 1
+          }
 
           git clone --filter=blob:none --no-checkout https://github.com/jqssun/android-titanium-browser.git "$T"
           git -C "$T" fetch --depth 1 origin "$TITANIUM_COMMIT"
@@ -32,10 +47,10 @@ jobs:
           git -C "$T" submodule update --init --depth 1 vanadium
           test "$(git -C "$T/vanadium" rev-parse HEAD)" = "$VANADIUM_COMMIT"
 
-          # These 13 files are not modified by pinned Titanium patch.sh. Refuse
-          # this shortcut if that invariant ever changes.
+          # These 13 paths are not touched by pinned Titanium patch.sh. Abort if
+          # that invariant changes instead of silently using the shortcut.
           if grep -Eq 'ProcessInitializationHandler|night_mode|dark_mode_(color_filter|filter|settings)' "$T/patch.sh"; then
-            echo 'Pinned Titanium patch.sh now touches a Night mode target; full reconstruction required.' >&2
+            echo 'Pinned Titanium patch.sh now touches a Night mode target.' >&2
             exit 1
           fi
 
@@ -56,14 +71,159 @@ jobs:
           git -c user.name='Titanium-Kiwi build' -c user.email='build@example.invalid' \
             am --whitespace=nowarn --keep-non-patch "$T"/vanadium/patches/*.patch
 
-          python3 - "$S" "$GITHUB_WORKSPACE/output/post-titanium-night-mode-base" <<'PY'
-          import hashlib
-          import shutil
+          # Prove this is the same base captured from run 34691153570.
+          python3 - "$S" <<'PY'
+          import hashlib, sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          expected = {
+              "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java": "0c8ad0b606e9d119743b85e238fe997d09458c951a0504863b2ccac97da4057d",
+              "chrome/browser/ui/android/night_mode/BUILD.gn": "fea7203de919361f05ee363f2a3b82817ef0e26c5f45bff2560f01fbab26e03b",
+              "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml": "95c3af1a24f5ca3d0f91aaff6afc560ece832a76ea2099395df152e6446c1094",
+              "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java": "47e8d1336f96f3a11ce566ef022f4587f929809f2c7e2b5a8d2c3a430005e5dc",
+              "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc": "8f16a319ff08e062f781b27c21095361e0711a6f30281be90bb36746394f0ab0",
+              "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h": "178f6beb55420301c18770ddbb8e265082fcba3217e8248bec3c396261e60cb0",
+              "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc": "49b9bea63fe3f7e41cbe9d92a6536ea522dbb0613dce816b10234472fe827e96",
+              "third_party/blink/renderer/platform/graphics/dark_mode_settings.h": "3bf45c39f890447087fd5549a78a9c8a8acfd039547de3c1674965492f31c6b6",
+              "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc": "23f8481a0b10f48f6d412a9fac0f8227a03d2e508fa0161168dde6116041fa66",
+              "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h": "217229378c7bb83b6de507fa20fc355374e622607c43e2e66e49be1671d08f33",
+              "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc": "093682608b2ce4ad1cd23675bc80f424a91d16ae36494eae598b88b9cb997265",
+          }
+          for rel, want in expected.items():
+              got = hashlib.sha256((root / rel).read_bytes()).hexdigest()
+              if got != want:
+                  raise SystemExit(f"base hash mismatch: {rel}: {got} != {want}")
+          for rel in (
+              "chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml",
+              "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml",
+          ):
+              if (root / rel).exists():
+                  raise SystemExit(f"expected new file already exists: {rel}")
+          PY
+
+          PATCH="$REPO/kiwi_port/patches/050-night-mode-presets.patch"
+          # Apply every hunk that still matches the real base. Rejected EOF/noise
+          # and the known contaminated-base hunks are normalized below.
+          git apply --reject --whitespace=nowarn "$PATCH" || true
+
+          python3 - "$S" <<'PY'
           import sys
           from pathlib import Path
+          root = Path(sys.argv[1])
 
-          src = Path(sys.argv[1])
-          out = Path(sys.argv[2])
+          # The Vanadium theme file has no trailing newline; preserve that exact
+          # EOF state so the regenerated patch contains no meaningless EOF hunk.
+          theme = root / "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml"
+          theme.write_bytes(b'''<?xml version="1.0" encoding="utf-8"?>\n<!--\nCopyright 2019 The Chromium Authors\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n-->\n\n<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">\n    <org.chromium.chrome.browser.night_mode.settings.RadioButtonGroupThemePreference\n        android:key="ui_theme_pref" />\n\n    <androidx.preference.ListPreference\n        android:key="kiwi_night_mode_preset"\n        android:persistent="false"\n        android:title="@string/kiwi_night_mode_preset_title"\n        android:summary="%s"\n        android:entries="@array/kiwi_night_mode_preset_entries"\n        android:entryValues="@array/kiwi_night_mode_preset_values" />\n    <Preference\n        android:key="kiwi_night_mode_restart"\n        android:persistent="false"\n        android:title="@string/kiwi_night_mode_restart_title"\n        android:summary="@string/kiwi_night_mode_restart_summary" />\n</PreferenceScreen>''')
+
+          settings_h = root / "third_party/blink/renderer/platform/graphics/dark_mode_settings.h"
+          settings_h.write_text('''// Copyright 2017 The Chromium Authors\n// Use of this source code is governed by a BSD-style license that can be\n// found in the LICENSE file.\n\n#ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_SETTINGS_H_\n#define THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_SETTINGS_H_\n\nnamespace blink {\n\n// New variables added to this struct should be considered in\n// third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h\nstruct DarkModeSettings {\n  // Foreground colors with brightness below this threshold will be inverted,\n  // and above it will be left as in the original, non-dark-mode page.  Set to\n  // 255 to always invert foreground color or to 0 to never invert text color.\n  int foreground_brightness_threshold = 255;\n\n  // Background elements with brightness above this threshold will be inverted,\n  // and below it will be left as in the original, non-dark-mode page.  Set to\n  // 256 to never invert the color or to 0 to always invert it.\n  //\n  // Warning: This behavior is the opposite of foreground_brightness_threshold!\n  int background_brightness_threshold = 0;\n\n  // Passed through --dark-mode-settings by the Android browser process. Keep\n  // these additions orthogonal to Chromium's LAB color conversion and image\n  // classifier so upstream behavior remains the default.\n  float contrast = 0.0f;\n  float lab_lightness_pivot = 110.0f;\n  float image_grayscale_percent = 0.0f;\n  bool increase_text_contrast = false;\n};\n\n}  // namespace blink\n\n#endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_SETTINGS_H_\n''')
+
+          builder = root / "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc"
+          builder.write_text('''// Copyright 2020 The Chromium Authors\n// Use of this source code is governed by a BSD-style license that can be\n// found in the LICENSE file.\n\n#include "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"\n\n#include <algorithm>\n#include <cmath>\n#include <string>\n#include <string_view>\n\n#include "base/command_line.h"\n#include "base/strings/string_number_conversions.h"\n#include "base/strings/string_split.h"\n#include "base/strings/string_util.h"\n#include "third_party/blink/public/common/features.h"\n#include "third_party/blink/public/common/switches.h"\n#include "third_party/blink/renderer/platform/graphics/dark_mode_settings.h"\n\nnamespace blink {\n\nnamespace {\n\n// Default values for dark mode settings.\nconst constexpr int kDefaultForegroundBrightnessThreshold = 150;\nconst constexpr int kDefaultBackgroundBrightnessThreshold = 205;\n\ntemplate <typename T>\nT Clamp(T value, T min_value, T max_value) {\n  return std::max(min_value, std::min(value, max_value));\n}\n\nDarkModeSettings BuildDarkModeSettings(std::string_view serialized_settings) {\n  DarkModeSettings settings;\n  settings.foreground_brightness_threshold =\n      Clamp<int>(kDefaultForegroundBrightnessThreshold, 0, 255);\n  settings.background_brightness_threshold =\n      Clamp<int>(kDefaultBackgroundBrightnessThreshold, 0, 255);\n\n  for (const auto& token : base::SplitStringPiece(\n           serialized_settings, ",", base::TRIM_WHITESPACE,\n           base::SPLIT_WANT_NONEMPTY)) {\n    const auto pair = base::SplitStringPiece(\n        token, "=", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);\n    if (pair.size() != 2)\n      continue;\n\n    double value = 0.0;\n    if (!base::StringToDouble(pair[1], &value) || !std::isfinite(value))\n      continue;\n    if (base::EqualsCaseInsensitiveASCII(pair[0], "ContrastPercent")) {\n      settings.contrast = Clamp(static_cast<float>(value), -1.0f, 1.0f);\n      settings.lab_lightness_pivot = 100.0f + settings.contrast * 100.0f;\n    } else if (base::EqualsCaseInsensitiveASCII(pair[0],\n                                                 "ImageGrayScalePercent")) {\n      settings.image_grayscale_percent =\n          Clamp(static_cast<float>(value), 0.0f, 1.0f);\n    } else if (base::EqualsCaseInsensitiveASCII(pair[0],\n                                                 "IncreaseTextContrast")) {\n      settings.increase_text_contrast = value != 0.0;\n    }\n  }\n  return settings;\n}\n\n}  // namespace\n\n// Always get the dark mode settings using this function.\nconst DarkModeSettings& GetCurrentDarkModeSettings() {\n  static DarkModeSettings settings = BuildDarkModeSettings(\n      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(\n          switches::kDarkModeSettings));\n  return settings;\n}\n\nDarkModeSettings BuildDarkModeSettingsForTesting(\n    std::string_view serialized_settings) {\n  return BuildDarkModeSettings(serialized_settings);\n}\n\n}  // namespace blink\n''')
+
+          # The last hunk of these files was coupled to the bad EOF change. If
+          # rejected, restore only the intended functional pieces idempotently.
+          cc = root / "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc"
+          s = cc.read_text()
+          if "const float lightness_pivot_;" not in s:
+              old = "  const lab::DarkModeSRGBLABTransformer transformer_;\n  sk_sp<cc::ColorFilter> filter_;\n"
+              new = "  const lab::DarkModeSRGBLABTransformer transformer_;\n  const float lightness_pivot_;\n  const bool increase_text_contrast_;\n  sk_sp<cc::ColorFilter> filter_;\n"
+              if old not in s: raise SystemExit("color filter member insertion point changed")
+              s = s.replace(old, new, 1)
+          if "DarkModeColorFilter::Create(\n    const DarkModeSettings& settings)" not in s:
+              old = "std::unique_ptr<DarkModeColorFilter> DarkModeColorFilter::Create() {\n  return std::make_unique<LABColorFilter>();\n}"
+              new = "std::unique_ptr<DarkModeColorFilter> DarkModeColorFilter::Create(\n    const DarkModeSettings& settings) {\n  return std::make_unique<LABColorFilter>(settings);\n}"
+              if old not in s: raise SystemExit("color filter Create insertion point changed")
+              s = s.replace(old, new, 1)
+          cc.write_text(s)
+
+          hh = root / "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h"
+          s = hh.read_text()
+          if "struct DarkModeSettings;" not in s:
+              s = s.replace("namespace blink {\n\n", "namespace blink {\n\nstruct DarkModeSettings;\n\n", 1)
+          if "Create(\n      const DarkModeSettings& settings)" not in s:
+              old = "  static std::unique_ptr<DarkModeColorFilter> Create();"
+              new = "  static std::unique_ptr<DarkModeColorFilter> Create(\n      const DarkModeSettings& settings);"
+              if old not in s: raise SystemExit("header Create insertion point changed")
+              s = s.replace(old, new, 1)
+          if "AdjustTextContrast" not in s:
+              old = "  virtual sk_sp<cc::ColorFilter> ToColorFilter() const = 0;\n"
+              new = old + "  virtual SkColor4f AdjustTextContrast(const SkColor4f& color,\n                                       const SkColor4f& background) const {\n    return color;\n  }\n"
+              if old not in s: raise SystemExit("header contrast insertion point changed")
+              s = s.replace(old, new, 1)
+          hh.write_text(s)
+          PY
+
+          # Reject files are expected only because the old patch contained bad
+          # EOF/context hunks. The final tree below is validated by semantics and
+          # then diffed afresh, so they must not leak into the regenerated patch.
+          find "$S" -name '*.rej' -delete
+
+          # Ensure every intended functional path actually reached final state.
+          grep -q 'SharedPrefsUtils.getNightModeSettingsSwitchValue' chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
+          grep -q '//chrome/browser/lifetime/android:java' chrome/browser/ui/android/night_mode/BUILD.gn
+          test -f chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
+          test -f chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
+          grep -q 'kiwi_night_mode_preset' chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
+          grep -q 'ApplicationLifetime.terminate(true)' chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
+          grep -q 'lab_lightness_pivot_' third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
+          grep -q 'AdjustTextContrast' third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
+          grep -q 'SkColorMatrix matrix' third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
+          grep -q 'image_grayscale_percent' third_party/blink/renderer/platform/graphics/dark_mode_settings.h
+          grep -q 'GetSwitchValueASCII' third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
+          grep -q 'BuildDarkModeSettingsForTesting' third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h
+          grep -q 'KiwiHighContrastReachesPaintFlags' third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc
+
+          PATHS=(
+            chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
+            chrome/browser/ui/android/night_mode/BUILD.gn
+            chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
+            chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
+            chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
+            chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
+            third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
+            third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
+            third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
+            third_party/blink/renderer/platform/graphics/dark_mode_settings.h
+            third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
+            third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h
+            third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc
+          )
+          git add -N chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml \
+                     chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
+          git diff --binary --full-index HEAD -- "${PATHS[@]}" > "$RUNNER_TEMP/050-night-mode-presets.patch"
+
+          python3 - "$RUNNER_TEMP/050-night-mode-presets.patch" <<'PY'
+          import sys
+          from pathlib import Path
+          p = Path(sys.argv[1]).read_text()
+          if p.count("diff --git ") != 13:
+              raise SystemExit(f"expected 13 files in normalized patch, got {p.count('diff --git ')}")
+          parts = p.split("@@")
+          for i in range(2, len(parts), 2):
+              body = parts[i + 1] if i + 1 < len(parts) else ""
+              changes = [x for x in body.splitlines()
+                         if x.startswith(("+", "-")) and not x.startswith(("+++", "---"))]
+              if changes and all(not x[1:].strip() for x in changes):
+                  raise SystemExit("blank-only hunk remains in normalized patch")
+          PY
+
+          # Strict forward and reverse checks against the exact base.
+          git reset --hard HEAD
+          git clean -fd
+          git apply --check "$RUNNER_TEMP/050-night-mode-presets.patch"
+          git apply "$RUNNER_TEMP/050-night-mode-presets.patch"
+          git apply --reverse --check "$RUNNER_TEMP/050-night-mode-presets.patch"
+
+          # Synchronize the repository metadata from exact bytes, not stale data.
+          cp "$RUNNER_TEMP/050-night-mode-presets.patch" "$REPO/kiwi_port/patches/050-night-mode-presets.patch"
+          cp "$RUNNER_TEMP/regenerate_patches.py" "$REPO/kiwi_port/regenerate_patches.py"
+          python3 - "$REPO" "$S" <<'PY'
+          import hashlib, json, subprocess, sys
+          from pathlib import Path
+          repo = Path(sys.argv[1])
+          src = Path(sys.argv[2])
           paths = [
               "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java",
               "chrome/browser/ui/android/night_mode/BUILD.gn",
@@ -79,26 +239,47 @@ jobs:
               "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h",
               "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc",
           ]
-          sums = []
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          manifest_path = repo / "kiwi_port/manifest.json"
+          manifest = json.loads(manifest_path.read_text())
           for rel in paths:
-              source = src / rel
-              if source.exists():
-                  data = source.read_bytes()
-                  target = out / rel
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  shutil.copy2(source, target)
-                  sums.append(f"{hashlib.sha256(data).hexdigest()}  {rel}")
-              else:
-                  sums.append(f"MISSING  {rel}")
-          out.mkdir(parents=True, exist_ok=True)
-          (out / "SHA256SUMS.txt").write_text("\n".join(sums) + "\n", encoding="utf-8")
-          print("\n".join(sums))
+              try:
+                  before = subprocess.check_output(["git", "show", f"HEAD:{rel}"], cwd=src)
+              except subprocess.CalledProcessError:
+                  before = None
+              after = (src / rel).read_bytes()
+              manifest["files"][rel] = {
+                  "before_sha256": None if before is None else sha(before),
+                  "after_sha256": sha(after),
+              }
+          manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+
+          patch = repo / "kiwi_port/patches/050-night-mode-presets.patch"
+          patch_sha = sha(patch.read_bytes())
+          series_path = repo / "kiwi_port/patches/series.json"
+          series = json.loads(series_path.read_text())
+          feature = next(x for x in series["features"] if x["id"] == "night-mode-presets")
+          feature["sha256"] = patch_sha
+          series_path.write_text(json.dumps(series, indent=2, ensure_ascii=False) + "\n")
+          print("normalized 050 sha256:", patch_sha)
           PY
 
-      - name: Upload exact base
-        uses: actions/upload-artifact@v4
-        with:
-          name: post-titanium-night-mode-base
-          path: output/post-titanium-night-mode-base
-          if-no-files-found: error
-          retention-days: 1
+          # Now validate the full strict Kiwi preflight on a pristine exact base.
+          cd "$S"
+          git reset --hard HEAD
+          git clean -fd
+          python3 "$REPO/kiwi_port/apply.py" "$S"
+          python3 "$REPO/kiwi_port/test_night_mode_patch.py"
+          python3 -m py_compile "$REPO/kiwi_port/regenerate_patches.py" "$REPO/kiwi_port/apply.py" "$REPO/kiwi_port/test_night_mode_patch.py"
+
+          cd "$REPO"
+          git config user.name 'Titanium-Kiwi repair'
+          git config user.email 'build@example.invalid'
+          git add kiwi_port/patches/050-night-mode-presets.patch \
+                  kiwi_port/patches/series.json \
+                  kiwi_port/manifest.json \
+                  kiwi_port/regenerate_patches.py
+          git diff --cached --check
+          git commit -m 'Rebuild Night mode patch from exact Chromium 152 base'
+          # Non-force push: if anything moved the target branch, fail safely.
+          git push origin "HEAD:$TARGET_BRANCH"
