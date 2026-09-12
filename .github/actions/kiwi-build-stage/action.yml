@@ -81,10 +81,51 @@ runs:
         python3 kiwi_port/incremental_sources.py work/titanium/chromium/src \
           --cache-key '${{ inputs.restore-key }}' \
           --identity '${{ inputs.titanium-commit }}:${{ inputs.vanadium-commit }}:${{ inputs.chromium-commit }}:validation'
-        # Reconcile a cached GN graph only when build arguments changed.
+
+        # The completed validation checkpoint was built with is_debug=true to
+        # fit the hosted-runner budget, which made the installable APK enormous
+        # and slowed the extension UI. Keep the cached objects/Ninja history,
+        # but migrate the restored graph to a symbol-free release-code build.
+        # This is intentionally NOT a clean: GN updates the graph and Ninja
+        # rebuilds only outputs whose command lines or dependencies changed.
         args=work/titanium/chromium/src/out/Default/args.gn
-        if ! grep -qx 'treat_warnings_as_errors = false' "$args"; then
-          echo 'treat_warnings_as_errors = false' >> "$args"
+        mkdir -p output
+        python3 - "$args" <<'PY'
+        import re
+        import sys
+        from pathlib import Path
+
+        path = Path(sys.argv[1])
+        original = path.read_text(encoding="utf-8")
+        text = original
+
+        def set_value(key: str, value: str) -> None:
+            global text
+            pattern = re.compile(rf"(?m)^{re.escape(key)}\s*=\s*[^\n]+$")
+            line = f"{key} = {value}"
+            if pattern.search(text):
+                text = pattern.sub(line, text, count=1)
+            else:
+                if text and not text.endswith("\n"):
+                    text += "\n"
+                text += line + "\n"
+
+        set_value("target_cpu", '"arm64"')
+        set_value("is_debug", "false")
+        set_value("is_official_build", "false")
+        set_value("symbol_level", "0")
+        set_value("blink_symbol_level", "0")
+        set_value("v8_symbol_level", "0")
+        set_value("generate_linker_map", "false")
+        set_value("use_thin_lto", "false")
+        set_value("treat_warnings_as_errors", "false")
+
+        if text != original:
+            path.write_text(text, encoding="utf-8")
+            Path("output/kiwi-gn-args-changed").touch()
+        PY
+        if [[ -f output/kiwi-gn-args-changed ]]; then
+          echo 'Build arguments changed: regenerating Ninja graph without cleaning out/Default.'
           (cd work/titanium/chromium/src && PATH="$GITHUB_WORKSPACE/work/depot_tools:$PATH" gn gen out/Default)
         fi
 
