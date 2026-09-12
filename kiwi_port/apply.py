@@ -27,6 +27,10 @@ def git(source: Path, *args: str, check: bool = False) -> subprocess.CompletedPr
     return completed
 
 
+def command_detail(completed: subprocess.CompletedProcess[str]) -> str:
+    return completed.stderr.strip() or completed.stdout.strip() or f"exit {completed.returncode}"
+
+
 def safe_relative(relative: str) -> Path:
     path = Path(relative)
     if path.is_absolute() or ".." in path.parts:
@@ -101,19 +105,22 @@ def main() -> int:
         # Preflight the complete series before changing any file. Feature
         # patches own disjoint files, so every contextual check can be done
         # against the same untouched tree.
-        failures = []
+        failures: list[tuple[dict[str, object], str, str]] = []
         for feature in SERIES["features"]:
             patch = HERE / "patches" / safe_relative(feature["patch"])
             if digest(patch) != feature["sha256"]:
                 raise RuntimeError(f"patch checksum mismatch: {patch.name}")
-            forward = git(source, "apply", "--check", str(patch)).returncode == 0
-            reverse = git(source, "apply", "--reverse", "--check", str(patch)).returncode == 0
-            if not forward and not reverse:
-                failures.append(feature)
+            forward = git(source, "apply", "--check", str(patch))
+            reverse = git(source, "apply", "--reverse", "--check", str(patch))
+            if forward.returncode != 0 and reverse.returncode != 0:
+                failures.append((feature, command_detail(forward), command_detail(reverse)))
         if failures:
             details = "\n".join(
-                f"  {feature['id']} ({feature['name']}): " + ", ".join(feature["files"])
-                for feature in failures
+                f"  {feature['id']} ({feature['name']}):\n"
+                f"    files: {', '.join(feature['files'])}\n"
+                f"    forward: {forward_detail}\n"
+                f"    reverse: {reverse_detail}"
+                for feature, forward_detail, reverse_detail in failures
             )
             raise RuntimeError(
                 "strict preflight failed; source was not changed:\n" + details
