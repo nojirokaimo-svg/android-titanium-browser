@@ -320,7 +320,7 @@ index 0a74f61d9075c6436f71677095c82d098e6ec60d..042110bbe253fc7f7e0c923c61236d1b
  #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_COLOR_FILTER_H_
 -
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc b/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
-index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..4a4c60f9c9483730249e3a7208cf7a478173b4fb 100644
+index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..cc0e6000b9ea41cd7e724fccf65442ca7b2bf9dd 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
 @@ -11,6 +11,7 @@
@@ -339,7 +339,7 @@ index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..4a4c60f9c9483730249e3a7208cf7a47
  #include "ui/gfx/color_utils.h"
  
  namespace blink {
-@@ -124,9 +126,17 @@ DarkModeFilter::ImmutableData::ImmutableData(const DarkModeSettings& settings)
+@@ -124,9 +126,19 @@ DarkModeFilter::ImmutableData::ImmutableData(const DarkModeSettings& settings)
        image_classifier(nullptr),
        color_filter(nullptr),
        image_filter(nullptr) {
@@ -353,12 +353,14 @@ index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..4a4c60f9c9483730249e3a7208cf7a47
 +  if (settings.image_grayscale_percent > 0.0f) {
 +    SkColorMatrix matrix;
 +    matrix.setSaturation(1.0f - settings.image_grayscale_percent);
-+    image_filter = cc::ColorFilter::MakeMatrix(matrix.getRowMajor());
++    float row_major[20];
++    matrix.getRowMajor(row_major);
++    image_filter = cc::ColorFilter::MakeMatrix(row_major);
 +  }
  
    foreground_classifier =
        DarkModeColorClassifier::MakeForegroundColorClassifier(settings);
-@@ -149,6 +159,9 @@ SkColor4f DarkModeFilter::AdjustDarkenColor(
+@@ -149,6 +161,9 @@ SkColor4f DarkModeFilter::AdjustDarkenColor(
    }();
  
    switch (role) {
@@ -368,7 +370,7 @@ index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..4a4c60f9c9483730249e3a7208cf7a47
      case ElementRole::kBorder: {
        if (color == SkColor4f{0.0f, 0.0f, 0.0f, color.fA})
          return color;
-@@ -294,4 +307,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {
+@@ -294,4 +309,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {
  }
  
  }  // namespace blink

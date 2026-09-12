@@ -96,7 +96,7 @@
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc": {
       "before_sha256": "b88082ae716ca4b6955d67fe3894f1c425335a74688852e6ed88c4ac739e6031",
-      "after_sha256": "d0ac9b3f23c862231ab288e74380db423c3bb80ebfe0b4bdfd12bbb395e634c3"
+      "after_sha256": "bfee0222371975b47a8c88adc549bd8a44ef6bdf08c3b619224d3b4e04e8f0bd"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings.h": {
       "before_sha256": "500989a196f933603e44e22b9910b80d75626b3960dbc76044eab706d80c76aa",

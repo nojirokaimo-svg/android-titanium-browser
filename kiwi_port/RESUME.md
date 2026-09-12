@@ -39,3 +39,5 @@ Validation/build work in progress:
 The local workspace has no out/Default. No clean operation is permitted. The
 incremental GitHub Actions run triggered by this checkpoint is the source of truth
 for Java/lint/native compile errors before further implementation changes.
+
+- Chromium 152 SkColorMatrix API was corrected to use an explicit 20-float row-major buffer; patch/manifest/series hashes were updated together.
