@@ -44,9 +44,9 @@
       "files": [
         "base/android/java/src/org/chromium/base/shared_preferences/StrictPreferenceKeyChecker.java",
         "chrome/browser/preferences/android/java/src/org/chromium/chrome/browser/preferences/AllPreferenceKeyRegistries.java",
-        "base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java"
+        "titanium/chromium_src/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java"
       ],
-      "sha256": "ae717429860c1297620710757b88c143e3f13fdf0d9127119bab7283a6ffdf61"
+      "sha256": "453ec15347eae72210e9188db1b7c4145bda2e5d75ff83f7cebb462ae3e85063"
     },
     {
       "id": "night-mode-presets",
