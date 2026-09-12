@@ -1,0 +1,85 @@
+name: Capture post-Titanium Night mode base
+
+on:
+  push:
+    branches:
+      - codex/kiwi-ui-preflight-fix
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Stop builder immediately before Kiwi patch application
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("build_kiwi_ui_arm64.sh")
+          s = p.read_text(encoding="utf-8")
+          needle = 'python3 "$KIT_ROOT/kiwi_port/apply.py" "$PWD" "${PATCH_ARGS[@]}"'
+          if s.count(needle) != 1:
+              raise SystemExit("capture injection point changed")
+          replacement = r'''python3 - "$KIT_ROOT" "$PWD" <<'PY_CAPTURE'
+          import hashlib
+          import shutil
+          import sys
+          from pathlib import Path
+
+          kit_root = Path(sys.argv[1])
+          src = Path(sys.argv[2])
+          out = kit_root / "output" / "post-titanium-night-mode-base"
+          paths = [
+              "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java",
+              "chrome/browser/ui/android/night_mode/BUILD.gn",
+              "chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml",
+              "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml",
+              "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml",
+              "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java",
+              "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc",
+              "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h",
+              "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc",
+              "third_party/blink/renderer/platform/graphics/dark_mode_settings.h",
+              "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc",
+              "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h",
+              "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc",
+          ]
+          lines = []
+          for rel in paths:
+              source = src / rel
+              if source.exists():
+                  data = source.read_bytes()
+                  target = out / rel
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copy2(source, target)
+                  digest = hashlib.sha256(data).hexdigest()
+                  lines.append(f"{digest}  {rel}")
+              else:
+                  lines.append(f"MISSING  {rel}")
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "SHA256SUMS.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print("Captured exact post-Titanium Night mode base:")
+          print("\n".join(lines))
+          PY_CAPTURE
+          exit 0'''
+          p.write_text(s.replace(needle, replacement), encoding="utf-8")
+          PY
+
+      - name: Prepare exact pinned Chromium + Vanadium + Titanium base
+        env:
+          KIWI_BUILD_PHASE: prepare
+          KIWI_PATCH_MODE: strict
+        run: ./build_kiwi_ui_arm64.sh
+
+      - name: Upload exact base
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-titanium-night-mode-base
+          path: output/post-titanium-night-mode-base
+          if-no-files-found: error
+          retention-days: 1
