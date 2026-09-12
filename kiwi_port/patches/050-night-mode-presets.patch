@@ -1,5 +1,5 @@
 diff --git a/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java b/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
-index 4762400..83fe50d 100644
+index 476240086620657c371f7dd189347ff1ff233355..83fe50daed630422240ad375c595956890de9372 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java
 @@ -31,6 +31,7 @@ import org.chromium.base.TraceEvent;
@@ -27,7 +27,7 @@ index 4762400..83fe50d 100644
  }
 -
 diff --git a/chrome/browser/ui/android/night_mode/BUILD.gn b/chrome/browser/ui/android/night_mode/BUILD.gn
-index 4e73df6..3a62246 100644
+index 4e73df67e7c7c2e5c31ca9dad630656776a24f84..3a6224608d9f7efb612b2a9ec1918a3c8b1debc8 100644
 --- a/chrome/browser/ui/android/night_mode/BUILD.gn
 +++ b/chrome/browser/ui/android/night_mode/BUILD.gn
 @@ -32,6 +32,7 @@ android_library("java") {
@@ -52,24 +52,69 @@ index 4e73df6..3a62246 100644
    resources_package = "org.chromium.chrome.browser.night_mode"
  }
 -
+diff --git a/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml b/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e04a52e361d766eb3de46561673c13f49021ac24
+--- /dev/null
++++ b/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
+@@ -0,0 +1,12 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="kiwi_night_mode_preset_title">Nightモードのスタイル</string>
++    <string-array name="kiwi_night_mode_preset_entries">
++        <item>標準</item>
++        <item>AMOLED</item>
++        <item>AMOLED グレースケール</item>
++        <item>グレー</item>
++        <item>グレー グレースケール</item>
++        <item>ハイコントラスト</item>
++    </string-array>
++</resources>
+diff --git a/chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml b/chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d5d556e9e09f529de043f9c6f07d018690ac61b
+--- /dev/null
++++ b/chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="kiwi_night_mode_preset_title">Night mode style</string>
++    <string-array name="kiwi_night_mode_preset_entries">
++        <item>Default</item>
++        <item>AMOLED</item>
++        <item>AMOLED grayscale</item>
++        <item>Gray</item>
++        <item>Gray grayscale</item>
++        <item>High contrast</item>
++    </string-array>
++    <string-array name="kiwi_night_mode_preset_values" translatable="false">
++        <item>0</item>
++        <item>1</item>
++        <item>2</item>
++        <item>3</item>
++        <item>4</item>
++        <item>5</item>
++    </string-array>
++</resources>
 diff --git a/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml b/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
-index 49d96d1..581ddf6 100644
+index 49d96d1ca4acb3f0e40dcaf06e69ddbd4bae26f4..68d91203c109b289dff6e17cc09721c9dcf289b1 100644
 --- a/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
 +++ b/chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml
-@@ -8,4 +8,11 @@ found in the LICENSE file.
+@@ -8,4 +8,12 @@ found in the LICENSE file.
  <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
      <org.chromium.chrome.browser.night_mode.settings.RadioButtonGroupThemePreference
          android:key="ui_theme_pref" />
 +
 +    <androidx.preference.ListPreference
 +        android:key="kiwi_night_mode_preset"
++        android:persistent="false"
 +        android:title="@string/kiwi_night_mode_preset_title"
 +        android:summary="%s"
 +        android:entries="@array/kiwi_night_mode_preset_entries"
 +        android:entryValues="@array/kiwi_night_mode_preset_values" />
  </PreferenceScreen>
 diff --git a/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java b/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
-index f6833ba..f18eab1 100644
+index f6833ba4b18b17c451448bc1b1f144fbd176e45d..793f714015bfe7cbe05f7550f05d97100f97354a 100644
 --- a/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
 +++ b/chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java
 @@ -9,13 +9,17 @@ import static org.chromium.chrome.browser.preferences.ChromePreferenceKeys.UI_TH
@@ -98,7 +143,7 @@ index f6833ba..f18eab1 100644
      private static final String PREF_UI_THEME_PREF_LIGHT = "ui_theme_pref_light";
      private static final String PREF_UI_THEME_PREF_DARK = "ui_theme_pref_dark";
  
-@@ -75,6 +80,23 @@ public class ThemeSettingsFragment extends ChromeBaseSettingsFragment
+@@ -75,6 +80,24 @@ public class ThemeSettingsFragment extends ChromeBaseSettingsFragment
                      return true;
                  });
  
@@ -113,8 +158,9 @@ index f6833ba..f18eab1 100644
 +                    if (!SharedPrefsUtils.SharedPrefsExt.NIGHT_MODE_PRESET.validateValue(preset)) {
 +                        return false;
 +                    }
-+                    SharedPrefsUtils.SharedPrefsExt.NIGHT_MODE_PRESET.putSync(preset);
-+                    WebContentsDarkModeController.setGlobalUserSettings(getProfile(), true);
++                    if (!SharedPrefsUtils.SharedPrefsExt.NIGHT_MODE_PRESET.putSync(preset)) {
++                        return false;
++                    }
 +                    ApplicationLifetime.terminate(true);
 +                    return true;
 +                });
@@ -122,16 +168,23 @@ index f6833ba..f18eab1 100644
          // TODO(crbug.com/40198953): Notify feature engagement system that settings were opened.
          // Record entry point metrics if this fragment is freshly created.
          if (savedInstanceState == null) {
-@@ -186,4 +208,3 @@ public class ThemeSettingsFragment extends ChromeBaseSettingsFragment
+@@ -186,4 +209,3 @@ public class ThemeSettingsFragment extends ChromeBaseSettingsFragment
                  }
              };
  }
 -
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
-index 4a3e2f1..1797696 100644
+index 4a3e2f1797a8f0a9eeffbe8a97ea60a9e802246b..f25c44ff5a29b0b3a370fa8a76925ace9e17f0c4 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc
-@@ -10,6 +10,7 @@
+@@ -4,12 +4,14 @@
+ 
+ #include "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h"
+ 
++#include <algorithm>
+ #include <array>
+ 
+ #include "base/check.h"
  #include "base/notreached.h"
  #include "cc/paint/color_filter.h"
  #include "third_party/blink/renderer/platform/graphics/dark_mode_lab_color_space.h"
@@ -139,24 +192,34 @@ index 4a3e2f1..1797696 100644
  #include "third_party/skia/include/effects/SkHighContrastFilter.h"
  #include "ui/gfx/color_utils.h"
  
-@@ -23,11 +24,13 @@ bool IsWithinEpsilon(float a, float b) {
+@@ -23,18 +25,22 @@ bool IsWithinEpsilon(float a, float b) {
  
  class LABColorFilter : public DarkModeColorFilter {
   public:
 -  LABColorFilter() : transformer_(lab::DarkModeSRGBLABTransformer()) {
 +  explicit LABColorFilter(const DarkModeSettings& settings)
 +      : transformer_(lab::DarkModeSRGBLABTransformer()),
++        lightness_pivot_(settings.lab_lightness_pivot),
 +        increase_text_contrast_(settings.increase_text_contrast) {
      SkHighContrastConfig config;
      config.fInvertStyle = SkHighContrastConfig::InvertStyle::kInvertLightness;
 -    config.fGrayscale = false;
 -    config.fContrast = 0.0;
-+    config.fGrayscale = settings.image_grayscale_percent >= 0.5f;
 +    config.fContrast = settings.contrast;
      filter_ = cc::ColorFilter::MakeHighContrast(config);
    }
  
-@@ -45,6 +48,9 @@ class LABColorFilter : public DarkModeColorFilter {
+   SkColor4f InvertColor(const SkColor4f& color) const override {
+     SkV3 rgb = {color.fR, color.fG, color.fB};
+     SkV3 lab = transformer_.SRGBToLAB(rgb);
+-    lab.x = std::min(110.0f - lab.x, 100.0f);
++    // Kiwi's LAB lightness pivot is 100 for AMOLED and 115 for Gray.
++    // Clamp before conversion: high contrast can otherwise produce negative L.
++    lab.x = std::clamp(lightness_pivot_ - lab.x, 0.0f, 100.0f);
+     rgb = transformer_.LABToSRGB(lab);
+ 
+     SkColor4f inverted_color{rgb.x, rgb.y, rgb.z, color.fA};
+@@ -45,6 +51,9 @@ class LABColorFilter : public DarkModeColorFilter {
        const SkColor4f& adjusted_color,
        const SkColor4f& background,
        float reference_contrast_ratio) override {
@@ -166,10 +229,11 @@ index 4a3e2f1..1797696 100644
      if (color_utils::GetContrastRatio(adjusted_color, background) >=
          reference_contrast_ratio)
        return adjusted_color;
-@@ -121,16 +127,17 @@ class LABColorFilter : public DarkModeColorFilter {
+@@ -121,16 +130,18 @@ class LABColorFilter : public DarkModeColorFilter {
    }
  
    const lab::DarkModeSRGBLABTransformer transformer_;
++  const float lightness_pivot_;
 +  const bool increase_text_contrast_;
    sk_sp<cc::ColorFilter> filter_;
  };
@@ -188,7 +252,7 @@ index 4a3e2f1..1797696 100644
  }  // namespace blink
 -
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
-index 0a74f61..3c40416 100644
+index 0a74f61d9075c6436f71677095c82d098e6ec60d..3c404167a8b655b89520bbc74d614460a11127f8 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h
 @@ -17,10 +17,13 @@ class ColorFilter;
@@ -212,10 +276,26 @@ index 0a74f61..3c40416 100644
  #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_COLOR_FILTER_H_
 -
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc b/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
-index a8546d1..8001cea 100644
+index a8546d10cd0b07d0eec8f6ef6aaa39dfe16c8df6..f7446acd052cc406f9739ab7eea299fe9a0ffd4e 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_filter.cc
-@@ -124,7 +124,7 @@ DarkModeFilter::ImmutableData::ImmutableData(const DarkModeSettings& settings)
+@@ -11,6 +11,7 @@
+ #include "base/command_line.h"
+ #include "base/containers/hashing_lru_cache.h"
+ #include "base/notreached.h"
++#include "cc/paint/color_filter.h"
+ #include "third_party/blink/public/common/switches.h"
+ #include "third_party/blink/renderer/platform/graphics/color.h"
+ #include "third_party/blink/renderer/platform/graphics/dark_mode_color_classifier.h"
+@@ -27,6 +28,7 @@
+ #include "third_party/skia/include/core/SkPixmap.h"
+ #include "third_party/skia/include/core/SkRect.h"
+ #include "third_party/skia/include/core/SkRefCnt.h"
++#include "third_party/skia/include/effects/SkColorMatrix.h"
+ #include "ui/gfx/color_utils.h"
+ 
+ namespace blink {
+@@ -124,9 +126,17 @@ DarkModeFilter::ImmutableData::ImmutableData(const DarkModeSettings& settings)
        image_classifier(nullptr),
        color_filter(nullptr),
        image_filter(nullptr) {
@@ -223,17 +303,27 @@ index a8546d1..8001cea 100644
 +  color_filter = DarkModeColorFilter::Create(settings);
    CHECK(color_filter);
    image_filter = color_filter->ToColorFilter();
++  // Kiwi desaturates classified images rather than inverting their lightness.
++  // Keep the matrix inside cc::ColorFilter for paint-op serialization, including
++  // raster-side image classification. Zero retains Chromium's original filter.
++  if (settings.image_grayscale_percent > 0.0f) {
++    SkColorMatrix matrix;
++    matrix.setSaturation(1.0f - settings.image_grayscale_percent);
++    image_filter = cc::ColorFilter::MakeMatrix(matrix.getRowMajor());
++  }
  
-@@ -294,4 +294,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {
+   foreground_classifier =
+       DarkModeColorClassifier::MakeForegroundColorClassifier(settings);
+@@ -294,4 +304,3 @@ size_t DarkModeFilter::GetInvertedColorCacheSizeForTesting() {
  }
  
  }  // namespace blink
 -
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_settings.h b/third_party/blink/renderer/platform/graphics/dark_mode_settings.h
-index efde6de..b288a6b 100644
+index efde6dee28e4c1312ff6dd6ab92fa36ddbe53fb5..07859e9eeb14b6fb30f411414429969691c58a3d 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_settings.h
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_settings.h
-@@ -21,9 +21,15 @@ struct DarkModeSettings {
+@@ -21,9 +21,16 @@ struct DarkModeSettings {
    //
    // Warning: This behavior is the opposite of foreground_brightness_threshold!
    int background_brightness_threshold = 0;
@@ -242,7 +332,8 @@ index efde6de..b288a6b 100644
 +  // these additions orthogonal to Chromium's LAB color conversion and image
 +  // classifier so upstream behavior remains the default.
 +  float contrast = 0.0f;
-+  float image_grayscale_percent = 0.15f;
++  float lab_lightness_pivot = 110.0f;
++  float image_grayscale_percent = 0.0f;
 +  bool increase_text_contrast = false;
  };
  
@@ -251,15 +342,16 @@ index efde6de..b288a6b 100644
  #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_SETTINGS_H_
 -
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
-index 9fe4f9a..c69e8fb 100644
+index 9fe4f9a0d200bf51e7bc0e2fc809faaf8eee0d11..708d3cc294d535784a67b1a4c004d3b1fe3f4da3 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc
-@@ -5,13 +5,14 @@
+@@ -5,13 +5,15 @@
  #include "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h"
  
  #include <string>
 -#include <unordered_map>
 +#include <string_view>
++#include <cmath>
  
  #include "base/command_line.h"
  #include "base/strings/string_number_conversions.h"
@@ -270,7 +362,7 @@ index 9fe4f9a..c69e8fb 100644
  #include "third_party/blink/renderer/platform/graphics/dark_mode_settings.h"
  
  namespace blink {
-@@ -27,12 +28,35 @@ T Clamp(T value, T min_value, T max_value) {
+@@ -27,12 +29,36 @@ T Clamp(T value, T min_value, T max_value) {
    return std::max(min_value, std::min(value, max_value));
  }
  
@@ -291,10 +383,11 @@ index 9fe4f9a..c69e8fb 100644
 +      continue;
 +
 +    double value = 0.0;
-+    if (!base::StringToDouble(pair[1], &value))
++    if (!base::StringToDouble(pair[1], &value) || !std::isfinite(value))
 +      continue;
 +    if (base::EqualsCaseInsensitiveASCII(pair[0], "ContrastPercent")) {
 +      settings.contrast = Clamp(static_cast<float>(value), -1.0f, 1.0f);
++      settings.lab_lightness_pivot = 100.0f + settings.contrast * 100.0f;
 +    } else if (base::EqualsCaseInsensitiveASCII(pair[0],
 +                                                 "ImageGrayScalePercent")) {
 +      settings.image_grayscale_percent =
@@ -307,7 +400,7 @@ index 9fe4f9a..c69e8fb 100644
    return settings;
  }
  
-@@ -40,9 +64,15 @@ DarkModeSettings BuildDarkModeSettings() {
+@@ -40,9 +66,15 @@ DarkModeSettings BuildDarkModeSettings() {
  
  // Always get the dark mode settings using this function.
  const DarkModeSettings& GetCurrentDarkModeSettings() {
@@ -326,7 +419,7 @@ index 9fe4f9a..c69e8fb 100644
  
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h
-index 90e8aff..396bd3c 100644
+index 90e8aff878ed41e81093ad286f58f6547183636e..396bd3c84084f84d99391ba9f8354968a375d42b 100644
 --- a/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h
 +++ b/third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h
 @@ -5,6 +5,8 @@
@@ -350,45 +443,3 @@ index 90e8aff..396bd3c 100644
  }  // namespace blink
  
  #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_DARK_MODE_SETTINGS_BUILDER_H_
-diff --git a/chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml b/chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
-new file mode 100644
---- /dev/null
-+++ b/chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml
-@@ -0,0 +1,20 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<resources>
-+    <string name="kiwi_night_mode_preset_title">Night mode style</string>
-+    <string-array name="kiwi_night_mode_preset_entries">
-+        <item>Default</item>
-+        <item>AMOLED</item>
-+        <item>AMOLED grayscale</item>
-+        <item>Gray</item>
-+        <item>Gray grayscale</item>
-+        <item>High contrast</item>
-+    </string-array>
-+    <string-array name="kiwi_night_mode_preset_values" translatable="false">
-+        <item>0</item>
-+        <item>1</item>
-+        <item>2</item>
-+        <item>3</item>
-+        <item>4</item>
-+        <item>5</item>
-+    </string-array>
-+</resources>
-diff --git a/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml b/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
-new file mode 100644
---- /dev/null
-+++ b/chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml
-@@ -0,0 +1,12 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<resources>
-+    <string name="kiwi_night_mode_preset_title">Nightモードのスタイル</string>
-+    <string-array name="kiwi_night_mode_preset_entries">
-+        <item>標準</item>
-+        <item>AMOLED</item>
-+        <item>AMOLED グレースケール</item>
-+        <item>グレー</item>
-+        <item>グレー グレースケール</item>
-+        <item>ハイコントラスト</item>
-+    </string-array>
-+</resources>

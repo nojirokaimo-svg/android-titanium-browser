@@ -80,15 +80,15 @@
     },
     "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml": {
       "before_sha256": "406ef64e4ac6a65519392ddc0720ed73a3e4f6ffddd7c158689dac6a110d990f",
-      "after_sha256": "6f87a1bf6523661097e8eaf2c7adb0a31deca3ca4b995254e577775d347634b1"
+      "after_sha256": "a2446c5cae57e82d993149eb0e42e420addcc77b9092900ec2f916abb73a49a8"
     },
     "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java": {
       "before_sha256": "646a948195fa0f7dd9836bd0f0266f8c0497a353572d12fddbf6fbb2fc642ded",
-      "after_sha256": "03adffe4f3478742ed9d214b9df2dda2218bab06bc3e97696907f00cb24d4cb3"
+      "after_sha256": "fc6a6aee3731a5f64a8e66f81dcb319385eed14fb36743e0eb4c347a06ad4206"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc": {
       "before_sha256": "ecc0e3f40f7b96aeb16554d368d0f0128d455d05dd7a12461d8292487bbd6422",
-      "after_sha256": "6b9e35d005d4deda0393181b3a7daee8034dce135230a61e62e98bb1d5425cb1"
+      "after_sha256": "a011b0d428b9a89fac914d4506e8cdcb61adceb9f8ad882274d6a6eb38bca861"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h": {
       "before_sha256": "59d6cbc7064a7b23aca8d243aa2637c49916c14bb0d955c052f8b829c72a8400",
@@ -96,15 +96,15 @@
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc": {
       "before_sha256": "b88082ae716ca4b6955d67fe3894f1c425335a74688852e6ed88c4ac739e6031",
-      "after_sha256": "84ffce4576ffe1d4c0d27753f78f9b1f410dcc768c0bf83ad23324b5e2209a9e"
+      "after_sha256": "d687efc190fb5b38bd0da4f47c928c2cc20ff02c7a7ea37a86f7e18eeb85cb8b"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings.h": {
       "before_sha256": "500989a196f933603e44e22b9910b80d75626b3960dbc76044eab706d80c76aa",
-      "after_sha256": "a7b69f874d96692f6319f22a7779e283a9f9f5baaec388cbcd19651f93f31bca"
+      "after_sha256": "8ceb8a9ff030a51c4746d081723878a052d9cea3120faeb5ebc7192ce34cacc3"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc": {
       "before_sha256": "f76e517a30de7e3d953d3e32950f8664c0eb700becd14d7f60ee26befc7b9371",
-      "after_sha256": "0b5ae9e922f70860abf667bb2b6fcbc6a68dfb4cd111b0dc2768827f36de4e37"
+      "after_sha256": "d0e784e8f9975da48ca17319566112b1b51f7d2424dfe651fdc7977dfcd61434"
     },
     "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h": {
       "before_sha256": "217229378c7bb83b6de507fa20fc355374e622607c43e2e66e49be1671d08f33",
