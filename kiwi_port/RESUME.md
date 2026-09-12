@@ -41,3 +41,4 @@ incremental GitHub Actions run triggered by this checkpoint is the source of tru
 for Java/lint/native compile errors before further implementation changes.
 
 - Chromium 152 SkColorMatrix API was corrected to use an explicit 20-float row-major buffer; patch/manifest/series hashes were updated together.
+- The original read-only incremental workflow is restored; resume compile validation from the completed checkpoint.
