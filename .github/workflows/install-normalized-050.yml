@@ -1,0 +1,89 @@
+name: Install verified normalized 050
+
+on:
+  push:
+    branches:
+      - codex/kiwi-ui-preflight-fix
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install exact-base verified 050 on clean fix branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TARGET=codex/kiwi-ui-050-normalize
+          EXPECTED=401625e729d6dde89cdceea0e6cf1dbe9c63e64e
+          cp kiwi_port/regenerate_patches.py "$RUNNER_TEMP/regenerate_patches.py"
+          git fetch origin "$TARGET"
+          git checkout -B "$TARGET" "origin/$TARGET"
+          test "$(git rev-parse HEAD)" = "$EXPECTED" || {
+            echo "Target moved; refusing to overwrite: $(git rev-parse HEAD)" >&2
+            exit 1
+          }
+          python3 - "$GITHUB_WORKSPACE" "$RUNNER_TEMP/regenerate_patches.py" <<'PY'
+          import base64
+          import hashlib
+          import json
+          import shutil
+          import sys
+          import zlib
+          from pathlib import Path
+
+          repo = Path(sys.argv[1])
+          regen = Path(sys.argv[2])
+          payload = """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"""
+          patch = zlib.decompress(base64.b64decode(payload))
+          want_patch = "46389b6ee7ebf4e59527108bbbd9933d8e1b140c520b7eabed377a1c66ace1d7"
+          got_patch = hashlib.sha256(patch).hexdigest()
+          if got_patch != want_patch:
+              raise SystemExit(f"payload sha mismatch: {got_patch}")
+          text = patch.decode("utf-8")
+          if text.count("diff --git ") != 13:
+              raise SystemExit("normalized 050 does not contain exactly 13 files")
+          (repo / "kiwi_port/patches/050-night-mode-presets.patch").write_bytes(patch)
+          shutil.copy2(regen, repo / "kiwi_port/regenerate_patches.py")
+
+          hashes = {
+            "chrome/android/java/src/org/chromium/chrome/browser/init/ProcessInitializationHandler.java": ("0c8ad0b606e9d119743b85e238fe997d09458c951a0504863b2ccac97da4057d", "c4b7eaa59e16d8259459f35f2d7f197e14b6080ddd0b9fb03380ef2e8598109c"),
+            "chrome/browser/ui/android/night_mode/BUILD.gn": ("fea7203de919361f05ee363f2a3b82817ef0e26c5f45bff2560f01fbab26e03b", "46c25e9d2dbd16a531d284d97a5aefbbdf3117a5fcc232abbbe46ed76a7585e4"),
+            "chrome/browser/ui/android/night_mode/java/res/values-ja/kiwi_night_mode.xml": (None, "1e4040029058aa0c768927a77e7a8f49ebb9e664e63f10b28bdff9a2bdbe8250"),
+            "chrome/browser/ui/android/night_mode/java/res/values/kiwi_night_mode.xml": (None, "85527f3aba0a1798fe9d38fd8ea115e4cab10f0bc9479c3218e26b5c16acfb49"),
+            "chrome/browser/ui/android/night_mode/java/res/xml/theme_preferences.xml": ("95c3af1a24f5ca3d0f91aaff6afc560ece832a76ea2099395df152e6446c1094", "8142f3ca862d54025ad4e100ea66d536d79861b842810f7453e6eab03571c11e"),
+            "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/settings/ThemeSettingsFragment.java": ("47e8d1336f96f3a11ce566ef022f4587f929809f2c7e2b5a8d2c3a430005e5dc", "273f69915ae3fac8fd326ebbe0c89dc93e4adf3f9f45464eaed0da2cd8f4d912"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.cc": ("8f16a319ff08e062f781b27c21095361e0711a6f30281be90bb36746394f0ab0", "47bc9e79ad5b5ac44cfbe29310bab0699bde1b04724928592b088e9d06cee045"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_color_filter.h": ("178f6beb55420301c18770ddbb8e265082fcba3217e8248bec3c396261e60cb0", "a6c12432add83145252a207ddd30f8acb7686077f89fa28f2a83d1c8cb00a28a"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_filter.cc": ("49b9bea63fe3f7e41cbe9d92a6536ea522dbb0613dce816b10234472fe827e96", "bfee0222371975b47a8c88adc549bd8a44ef6bdf08c3b619224d3b4e04e8f0bd"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_settings.h": ("3bf45c39f890447087fd5549a78a9c8a8acfd039547de3c1674965492f31c6b6", "8ceb8a9ff030a51c4746d081723878a052d9cea3120faeb5ebc7192ce34cacc3"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.cc": ("23f8481a0b10f48f6d412a9fac0f8227a03d2e508fa0161168dde6116041fa66", "1d601c2fc7cdced06096e43ec850e592efd236494eba43113d5fe92b40ca75cc"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_settings_builder.h": ("217229378c7bb83b6de507fa20fc355374e622607c43e2e66e49be1671d08f33", "383112119bee8415df6c0394c25e76d0ce62d13cbf50b33152aa3253fb65a3a5"),
+            "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc": ("093682608b2ce4ad1cd23675bc80f424a91d16ae36494eae598b88b9cb997265", "0f90652a107c87cbcd133439ef50d716f31f7412545d3e6496c946f78fbc0aab"),
+          }
+          manifest_path = repo / "kiwi_port/manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          for path, (before, after) in hashes.items():
+              manifest["files"][path] = {"before_sha256": before, "after_sha256": after}
+          manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+          series_path = repo / "kiwi_port/patches/series.json"
+          series = json.loads(series_path.read_text(encoding="utf-8"))
+          feature = next(x for x in series["features"] if x["id"] == "night-mode-presets")
+          feature["sha256"] = want_patch
+          series_path.write_text(json.dumps(series, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          print("installed normalized 050", got_patch)
+          PY
+          python3 -m py_compile kiwi_port/regenerate_patches.py kiwi_port/apply.py kiwi_port/test_night_mode_patch.py
+          git diff --check
+          git config user.name 'Titanium-Kiwi repair'
+          git config user.email 'build@example.invalid'
+          git add kiwi_port/patches/050-night-mode-presets.patch kiwi_port/patches/series.json kiwi_port/manifest.json kiwi_port/regenerate_patches.py
+          git commit -m 'Rebuild Night mode patch from exact Chromium 152 base'
+          git push origin "HEAD:$TARGET"
