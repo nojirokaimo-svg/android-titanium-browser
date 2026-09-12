@@ -58,7 +58,7 @@
       "before_sha256": "b7e4c1aa25e1715c39ac9fb197627f7fbd4f62dca309abe242ab5fd09b95d530",
       "after_sha256": "fdd6c82d4bd7ca4a6b99732f9701b6de0f9f5d80b63689d9446fe2a7680291f0"
     },
-    "base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java": {
+    "titanium/chromium_src/base/android/java/src/org/chromium/base/shared_preferences/SharedPrefsUtils.java": {
       "before_sha256": "bec8e43d685db44ca81c0220eb206416212a3643895e01c5b4a70a83e47ac9ed",
       "after_sha256": "d5c4a2f16b3a3a16c875981db76d0223d597908aafc3383bd4b20d472043bf30"
     },
