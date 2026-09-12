@@ -68,6 +68,15 @@
         "third_party/blink/renderer/platform/graphics/dark_mode_filter_test.cc"
       ],
       "sha256": "46389b6ee7ebf4e59527108bbbd9933d8e1b140c520b7eabed377a1c66ace1d7"
+    },
+    {
+      "id": "runtime-night-mode",
+      "name": "Make Kiwi global Night mode activate web darkening immediately",
+      "patch": "060-runtime-fixes.patch",
+      "files": [
+        "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java"
+      ],
+      "sha256": "5cf192d45d399621ab1c28508f46072e9831e2ee784c9e9d75ad6bc6f9c8dab2"
     }
   ]
 }
