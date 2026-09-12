@@ -38,6 +38,48 @@ def checked_path(source, name):
     return result
 
 
+def force_release_args(out):
+    """Convert a restored validation/debug checkpoint into a lean release-code build.
+
+    Keep official-build extras and ThinLTO disabled so the hosted runner can still
+    resume the build in stages, but never publish the huge/slower is_debug=true APK.
+    The composite action already runs `gn gen` whenever
+    `treat_warnings_as_errors = false` is missing, so remove that line only when
+    we change an argument and let the existing guarded regeneration path handle it.
+    """
+    args = out / 'args.gn'
+    if not args.is_file():
+        raise RuntimeError(f'Missing restored GN args: {args}')
+
+    original = args.read_text(encoding='utf-8')
+    updated = original
+    updated = updated.replace('is_debug = true', 'is_debug = false')
+    updated = updated.replace('is_official_build = true', 'is_official_build = false')
+    updated = updated.replace('symbol_level = 1', 'symbol_level = 0')
+    updated = updated.replace('generate_linker_map = true', 'generate_linker_map = false')
+
+    required = (
+        'blink_symbol_level = 0',
+        'v8_symbol_level = 0',
+        'use_thin_lto = false',
+    )
+    for line in required:
+        if line not in updated.splitlines():
+            updated = updated.rstrip() + '\n' + line + '\n'
+
+    changed = updated != original
+    if changed:
+        # Force the already-existing guarded `gn gen` in kiwi-build-stage.
+        lines = [
+            line for line in updated.splitlines()
+            if line.strip() != 'treat_warnings_as_errors = false'
+        ]
+        updated = '\n'.join(lines).rstrip() + '\n'
+        args.write_text(updated, encoding='utf-8')
+        print('Converted restored out/Default from debug validation args to release-code args.')
+    return changed
+
+
 def restore(source, cache_key, manifest, legacy, identity):
     out = source / 'out/Default'
     state_path = out / STATE
@@ -87,6 +129,7 @@ def restore(source, cache_key, manifest, legacy, identity):
     # out/Default so a checkpoint continuation can prove whether this stage
     # introduced source edits without touching any compiled output.
     (out / PLAN).write_text(json.dumps(plan, indent=2) + '\n')
+    force_release_args(out)
     print(json.dumps(plan, indent=2))
     return changed
 
