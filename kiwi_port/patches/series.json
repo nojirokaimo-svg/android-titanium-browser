@@ -76,7 +76,7 @@
       "files": [
         "chrome/browser/ui/android/night_mode/java/src/org/chromium/chrome/browser/night_mode/WebContentsDarkModeController.java"
       ],
-      "sha256": "5cf192d45d399621ab1c28508f46072e9831e2ee784c9e9d75ad6bc6f9c8dab2"
+      "sha256": "89f292ffbe575da4408dffcce4f35ceacb286dae5c2224ee87a8b85d420c4073"
     },
     {
       "id": "renderer-force-dark-runtime",
